@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!--
+Copyright (c) 2019, I3D Robotics Ltd.
+-->
+
+<robot name="example_camera" 
+    xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find i3dr_stereo_camera-ros)/urdf/i3dr_stereo_camera.urdf.xacro" />
+
+    <xacro:i3dr_stereo_camera camera_name="example_camera" baseline="0.06" toe_in_r="0" toe_in_l="0" width="0.038" height="0.10175" length="0.03242" mount_offset_y="-0.015" image_width="752" image_height="480" image_format="MONO8" hfov="1.04" focus_near="0.3" r="0.1" g="0.1" b="0.1" />
+
+</robot>

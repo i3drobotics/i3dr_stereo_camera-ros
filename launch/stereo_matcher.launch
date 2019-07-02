@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!--XML-->
+<launch>
+
+    <!-- SETUP ARGUMENTS -->
+    <arg name="gui" default="false"/>
+    <arg name="camera_namespace" default="stereo"/>
+
+    <arg name="stereo_algorithm" default="0" />
+    <arg name="min_disparity" default="128" />
+    <arg name="disparity_range" default="256" />
+    <arg name="correlation_window_size" default="19" />
+    <arg name="uniqueness_ratio" default="2" />
+    <arg name="speckle_range" default="4" />
+    <arg name="speckle_size" default="1000" />
+
+    <arg name="left_image_topic" default="left/image_raw"/>
+    <arg name="right_image_topic" default="right/image_raw"/>
+    <arg name="left_image_rect_topic" default="left/image_rect"/>
+    <arg name="right_image_rect_topic" default="right/image_rect"/>
+    <arg name="left_image_info_topic" default="left/camera_info"/>
+    <arg name="right_image_info_topic" default="right/camera_info"/>
+    <arg name="depth_optical_frame" default="$(arg camera_namespace)_depth_optical_frame"/>
+
+    <arg name="use_i3dr_matcher" default="false"/>
+
+    <!-- STEREO <MATCHER> -->
+    <node unless="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc_$(arg camera_namespace)" output="screen">
+        <!-- Matcher Parameters -->
+        <!-- see link below for details on matcher parameters -->
+        <!-- http://wiki.ros.org/stereo_image_proc/Tutorials/ChoosingGoodStereoParameters -->
+        <!-- algorithm 1: OpenCV block -->
+        <!-- algorithm 2: OpenCV SGBM -->
+        <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
+        <param name="min_disparity" value="$(arg min_disparity)" />
+        <param name="disparity_range" value="$(arg disparity_range)" />
+        <param name="correlation_window_size" value="$(arg correlation_window_size)" />
+        <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
+        <param name="speckle_range" value="$(arg speckle_range)" />
+        <param name="speckle_size" value="$(arg speckle_size)" />
+
+        <!-- approximate sync used when cameras are not perfectly triggered in unison -->
+        <param name="approximate_sync" value="true" />
+        <param name="queue_size" value="50"/>
+
+        <remap from="left/image_raw" to="$(arg left_image_topic)"/>
+        <remap from="right/image_raw" to="$(arg right_image_topic)"/>
+        <remap from="left/camera_info" to="$(arg left_image_info_topic)"/>
+        <remap from="right/camera_info" to="$(arg right_image_info_topic)"/>
+    </node>
+
+    <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="i3dr_disparity_$(arg camera_namespace)" output="screen">
+        <param name="frame_id" value="$(arg depth_optical_frame)"/>
+
+        <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
+        <param name="min_disparity" value="$(arg min_disparity)" />
+        <param name="disparity_range" value="$(arg disparity_range)" />
+        <param name="correlation_window_size" value="$(arg correlation_window_size)" />
+        <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
+        <param name="speckle_range" value="$(arg speckle_range)" />
+        <param name="speckle_size" value="$(arg speckle_size)" />
+
+        <remap from="left/image_raw" to="$(arg left_image_topic)"/>
+        <remap from="right/image_raw" to="$(arg right_image_topic)"/>
+        <remap from="left/camera_info" to="$(arg left_image_info_topic)"/>
+        <remap from="right/camera_info" to="$(arg right_image_info_topic)"/>
+    </node>
+
+    <!-- custom point cloud generator with normals from disparity image -->
+    <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_point_cloud" name="i3dr_point_cloud_$(arg camera_namespace)" output="screen">
+        <remap from="left/image_rect" to="$(arg left_image_rect_topic)" />
+    </node>
+
+    <!-- DISPLAY -->
+    <!-- display phobos disparity image -->
+    <node if="$(arg gui)" pkg="image_view" type="disparity_view" name="disparity_view_$(arg camera_namespace)" output="screen">
+        <remap from="image" to="/$(arg camera_namespace)/disparity" />
+    </node>
+
+    <!-- run rqt control gui for adjusting stereo configuration -->
+    <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="display_controls_$(arg camera_namespace)" />
+
+</launch>
