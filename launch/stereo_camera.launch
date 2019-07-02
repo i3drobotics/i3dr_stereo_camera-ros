@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!--XML-->
+<launch>
+    <!-- SETUP ARGUMENTS -->
+    <!-- enable/disable rviz -->
+    <arg name="rviz" default="true" />
+    <!-- enable/disable calibration -->
+    <arg name="calibrate" default="false"/>
+    <arg name="slam" default="false"/>
+
+    <arg name="camera_name" default="i3dr_stereo_cam"/>
+
+    <!-- SETUP ROBOT MODEL -->
+    <!-- (robot model should be handelled by master) -->
+    <param name="$(arg camera_name)_robot_description" command="$(find xacro)/xacro '$(find i3dr_stereo_camera)/urdf/i3dr_stereo_camera_scene.urdf.xacro'" />
+    <arg name="use_tf_static" default="false"/>
+    <node name="robot_state_publisher_phobos" pkg="robot_state_publisher" type="state_publisher">
+        <remap from="robot_description" to="$(arg camera_name)_robot_description"/>
+        <param name="use_tf_static" value="$(arg use_tf_static)"/>
+    </node>
+    
+    <!-- STEREO CAPTURE -->
+    <include file="$(find i3dr_stereo_camera)/launch/stereo_capture.launch">
+        <!-- Be sure to change this to your cameras serials -->
+        <arg name="camera_namespace" value="$(arg camera_name)"/>
+        <arg name="camera_right_serial" value="27810457"/>
+        <arg name="camera_left_serial" value="41810612"/>
+        <arg name="frame_width" value="1920"/>
+        <arg name="frame_height" value="1080"/>
+        <arg name="exposure" value="6000"/>
+        <arg name="gain" value="0"/>
+    </include>
+
+    <!-- STEREO CALIBRATION -->
+    <include if="$(arg calibrate)" file="$(find i3dr_stereo_camera)/launch/stereo_calibration.launch">
+        <arg name="camera_namespace" value="$(arg camera_name)"/>
+    </include>
+
+    <!-- STEREO MATCHER -->
+    <include file="$(find i3dr_stereo_camera)/launch/stereo_matcher.launch">
+        <arg name="use_i3dr_matcher" value="true"/>
+
+        <!-- enable/disable gui for stereo matching parameters -->
+        <arg name="camera_namespace" value="$(arg camera_name)"/>
+        <arg name="gui" value="true"/>
+        <arg name="stereo_algorithm" value="0" />
+        <arg name="min_disparity" value="-250" />
+        <arg name="disparity_range" value="192" />
+        <arg name="correlation_window_size" value="19" />
+        <arg name="uniqueness_ratio" value="1" />
+        <arg name="speckle_range" value="4" />
+        <arg name="speckle_size" value="1000" />
+    </include>
+
+    <!-- STEREO REGISTRATOIN -->
+    <include if="$(arg slam)" file="$(find i3dr_registration_localisation)/launch/stereo_localisation.launch">
+        <arg name="localization" value="false"/>
+        <arg name="camera_namespace" value="$(arg camera_name)"/>
+        <arg name="depth_odom" value="true"/>
+        <!--<arg name="scan3d_odom" value="true"/>-->
+        <!--<arg name="depth_icp_odom" value="true"/>-->
+        <arg name="disparity2Depth" default="true"/>
+        <arg name="rgb_topic" value="/$(arg camera_name)/left/image_rect_color"/>
+        <arg name="camera_info_topic" value="/$(arg camera_name)/left/camera_info"/>
+        <arg name="depth_camera_info_topic" value="/$(arg camera_name)/left/camera_info"/>
+        <arg name="cloud_topic" value="/$(arg camera_name)/points2"/>
+        <arg name="base_link_frame" value="$(arg camera_name)_base_link"/>
+        <!-- should be set to true if using SGBM as this takes longer to process -->
+        <arg name="slow_processing" default="false"/>
+    </include>
+
+    <!-- DISPLAY -->
+    <!-- run rviz with config file -->
+    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rivz" 
+        args="-d $(find i3dr_stereo_camera)/rviz/scene.rviz"/>
+
+</launch>

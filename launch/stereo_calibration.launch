@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!--XML-->
+<launch>
+    <!-- SETUP ARGUMENTS -->
+    <!-- number of rows in checkerboard -->
+    <arg name="grid_rows" default="9" />
+    <!-- number of columns in checkerboard -->
+    <arg name="grid_cols" default="6" />
+    <!-- size of squares in checkerboard -->
+    <arg name="grid_size" default="0.036" />
+    <!-- enable/disable approximate sync for stereo cameras that do not trigger in unison -->
+    <arg name="approximate_sync" default="true" />
+
+    <arg name="camera_namespace" default="stereo" />
+
+    <arg name="stereo_cal" default="true"/>
+    <arg name="single_cal" default="false"/>
+
+    <!-- STEREO CALIBRATION -->
+    <!-- turn on/off approximate sync for stereo cameras not fully in unison -->
+    <arg if="$(arg approximate_sync)" name="approx_val" value="--approximate 0.1" />
+    <arg unless="$(arg approximate_sync)" name="approx_val" value="" />
+   
+    <group if="$(arg stereo_cal)">   
+        <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal" output="screen"
+            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+            <remap from="right" to="/$(arg camera_namespace)/right/image_raw"/>
+            <remap from="left" to="/$(arg camera_namespace)/left/image_raw"/>
+            <remap from="right_camera" to="/$(arg camera_namespace)/right"/>
+            <remap from="left_camera" to="/$(arg camera_namespace)/left"/>
+        </node>
+    </group>
+    <group if="$(arg single_cal)">   
+        <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_left" output="screen"
+            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+            <remap from="image" to="/$(arg camera_namespace)/left/image_raw"/>
+            <remap from="camera" to="/$(arg camera_namespace)/left"/>
+        </node>
+        <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_right" output="screen"
+            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+            <remap from="image" to="/$(arg camera_namespace)/right/image_raw"/>
+            <remap from="camera" to="/$(arg camera_namespace)/right"/>
+        </node>
+    </group>
+
+    <!-- See below for more information on the stereo calibration process -->
+    <!-- http://wiki.ros.org/camera_calibration/Tutorials/StereoCalibration -->
+
+</launch>
