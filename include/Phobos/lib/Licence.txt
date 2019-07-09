@@ -1,6 +1,0 @@
-Test of new stereomatcher for IS-instruments.
-
-Developed by Gerald Lodron, Joanneom Research
-0316 876-1751
-gerald.lodron@joanneum.at
-
