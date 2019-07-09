@@ -13,6 +13,8 @@
     <arg name="uniqueness_ratio" default="2" />
     <arg name="speckle_range" default="4" />
     <arg name="speckle_size" default="1000" />
+    <arg name="prefilter_size" default="147" />
+    <arg name="prefilter_cap" default="7" />
 
     <arg name="left_image_topic" default="left/image_raw"/>
     <arg name="right_image_topic" default="right/image_raw"/>
@@ -38,6 +40,8 @@
         <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
         <param name="speckle_range" value="$(arg speckle_range)" />
         <param name="speckle_size" value="$(arg speckle_size)" />
+        <param name="prefilter_size" value="$(arg prefilter_size)" />
+        <param name="prefilter_cap" value="$(arg prefilter_cap)" />
 
         <!-- approximate sync used when cameras are not perfectly triggered in unison -->
         <param name="approximate_sync" value="true" />
