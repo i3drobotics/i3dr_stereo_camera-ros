@@ -1,3 +1,5 @@
+#define REVERSE_DISPARITY_EN 0
+
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/param.h>
@@ -11,7 +13,10 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/core/core.hpp>
 #include <opencv/cv.hpp>
-#include <opencv2/ximgproc.hpp>
+
+#if REVERSE_DISPARITY_EN
+    #include <opencv2/ximgproc.hpp>
+#endif
 
 #include <image_transport/image_transport.h>
 
@@ -98,15 +103,17 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
 
         bm->compute(left_image, right_image, disp);
 
-        auto right_matcher = cv::ximgproc::createRightMatcher(bm);
-        right_matcher->compute(right_image, left_image, disparity_rl);
+        #if REVERSE_DISPARITY_EN
+            auto right_matcher = cv::ximgproc::createRightMatcher(bm);
+            right_matcher->compute(right_image, left_image, disparity_rl);
 
-        double wls_lambda = 8000;
-        double wls_sigma = 1.5;
-        cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(bm);
-        wls_filter->setLambda(wls_lambda);
-        wls_filter->setSigmaColor(wls_sigma);
-        wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
+            double wls_lambda = 8000;
+            double wls_sigma = 1.5;
+            cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(bm);
+            wls_filter->setLambda(wls_lambda);
+            wls_filter->setSigmaColor(wls_sigma);
+            wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
+        #endif
     }
     else if (algorithm == CV_StereoSGBM)
     {
@@ -127,15 +134,17 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
 
         sgbm->compute(left_image, right_image, disp);
 
-        auto right_matcher = cv::ximgproc::createRightMatcher(sgbm);
-        right_matcher->compute(right_image, left_image, disparity_rl);
+        #if REVERSE_DISPARITY_EN
+            auto right_matcher = cv::ximgproc::createRightMatcher(sgbm);
+            right_matcher->compute(right_image, left_image, disparity_rl);
 
-        double wls_lambda = 8000;
-        double wls_sigma = 1.5;
-        cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(sgbm);
-        wls_filter->setLambda(wls_lambda);
-        wls_filter->setSigmaColor(wls_sigma);
-        wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
+            double wls_lambda = 8000;
+            double wls_sigma = 1.5;
+            cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(sgbm);
+            wls_filter->setLambda(wls_lambda);
+            wls_filter->setSigmaColor(wls_sigma);
+            wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
+        #endif
     }
     else if (algorithm == JR_StereoSGBM){
         MatcherJrSGM* matcher = new MatcherJrSGM;
