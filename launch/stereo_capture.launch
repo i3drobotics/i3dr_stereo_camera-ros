@@ -24,6 +24,7 @@
         <!-- Start the pylon control node for each camera -->
         <node if="$(eval cameratype == 1)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
             <param name="camera_frame" value="/$(arg camera_namespace)_depth_optical_frame"/>
+            <param name="device_user_id" value="camera_left_serial"/>
             <param name="camera_info_url" value="file:///home/i3dr/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml"/>
             <param name="frame_rate" value="$(arg fps)"/>
             <param name="exposure" value="$(arg exposure)"/>
@@ -35,6 +36,7 @@
 
         <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
             <param name="camera_frame" value="/$(arg camera_namespace)_depth_optical_frame"/>
+            <param name="device_user_id" value="camera_right_serial"/>
             <param name="camera_info_url" value="file:///home/i3dr/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml"/>
             <param name="frame_rate" value="$(arg fps)"/>
             <param name="exposure" value="$(arg exposure)"/>
