@@ -9,12 +9,16 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-find_package(Phobos REQUIRED)
-
-#set(OpenCV_DIR /home/i3dr/i3dr_tools_ros/i3dr_tools_ros_WS/3rd_party/opencv/opencv34/opencv/build/OpenCVConfig.cmake)
-#message(STATUS "OpenCV 3.4.6 Directory: ${OpenCV_DIR}")
-find_package(OpenCV 3.4.6 REQUIRED)
+# build with i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=ON'
+# build without i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=OFF'
+option(ENABLE_I3DR_ALG "Use I3DR Matching algorithm" ON)
+if (ENABLE_I3DR_ALG)
+	#Add FindPhobos.cmake directory to CMAKE_MODULE_PATH
+	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+	find_package(Phobos REQUIRED)
+else (ENABLE_I3DR_ALG)
+	find_package(OpenCV REQUIRED)
+endif()
 
 find_package(PCL 1.2 REQUIRED)
 
@@ -24,8 +28,6 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
 )
-
-message(STATUS "Phobos include directories: ${Phobos_INCLUDE_DIRS}")
 
 add_service_files(
     FILES
@@ -53,9 +55,16 @@ catkin_package(
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-add_executable(
-	generate_disparity src/generate_disparity.cpp src/matcherJrsgm.cpp src/iniReader.cpp
-)
+if (PHOBOS_FOUND)
+	add_executable(
+		generate_disparity src/generate_disparity.cpp src/matcherJrsgm.cpp src/iniReader.cpp
+	)
+else (PHOBOS_FOUND)
+	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
+	add_executable(
+		generate_disparity src/generate_disparity_no_jr.cpp
+	)
+endif()
 
 target_link_libraries(
 	generate_disparity
