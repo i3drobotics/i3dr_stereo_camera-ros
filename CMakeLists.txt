@@ -37,15 +37,15 @@ generate_messages(
   DEPENDENCIES
   std_msgs
 )
-
+ 
 generate_dynamic_reconfigure_options(
 	cfg/i3DR_Disparity.cfg
 	cfg/tiscamera_settings.cfg
 )
 
-catkin_package(
+catkin_package( 
     INCLUDE_DIRS include
-	CATKIN_DEPENDS roscpp nodelet std_msgs sensor_msgs
+	CATKIN_DEPENDS roscpp nodelet std_msgs sensor_msgs message_runtime
 	LIBRARIES ${PROJECT_NAME}
 #  DEPENDS system_lib
 )
