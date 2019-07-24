@@ -6,8 +6,8 @@
 
 class MatcherJrSGM{
     public:
-        MatcherJrSGM(void){
-            init();
+        MatcherJrSGM(std::string &sConfigFile){
+            init(sConfigFile);
         }
     
         ~MatcherJrSGM(void){
@@ -15,11 +15,6 @@ class MatcherJrSGM{
                 JR::Phobos::DestroyMatchStereoHandle(matcher_handle);
             }
         }
-
-        void forwardMatch(void);
-        /*
-        void backwardMatch(void);
-        */
 
         void parseConfig(std::string input_file);
         int getErrorDisparity();
@@ -46,15 +41,14 @@ class MatcherJrSGM{
         int getDisparityShift(void){return params.fTopPredictionShift * pow(2, params.nNumberOfPyramids-1) ; }
 
         void compute(cv::Mat left_image, cv::Mat right_image, cv::Mat disp);
+        void backwardMatch(cv::Mat left_image, cv::Mat right_image, cv::Mat disp);
 
     private:
         JR::Phobos::TSTEREOHANDLE matcher_handle = nullptr;
         JR::Phobos::SMatchingParametersInput params;
-        //std::string config_path = "jr_sgm_config.cfg";
-        std::string config_path = "/home/i3dr/i3dr_JRSGM_ros_WS/src/i3dr_stereo_camera-ros/ini/multigpusgm_param_test.ini";
         int min_disparity, disparity_range;
 
-        void init(void);
+        void init(std::string &sConfigFile);
         void initParameters(int nPyramids, JR::Phobos::SSGMParameters sgm_params);
         JR::Phobos::SMatchingParameters parsePyramid(iniReader *settings, std::string group);
         JR::Phobos::SSGMParameters initSGMParameters();

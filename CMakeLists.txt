@@ -3,7 +3,7 @@ set (CMAKE_CXX_STANDARD 11)
 project(i3dr_stereo_camera)
 
 find_package(catkin REQUIRED COMPONENTS
-                roscpp std_msgs tf rospy dynamic_reconfigure message_generation 
+                roscpp std_msgs tf rospy dynamic_reconfigure image_geometry message_generation 
                 camera_info_manager image_transport stereo_msgs cv_bridge
             )
 
@@ -32,7 +32,8 @@ include_directories(
 add_service_files(
     FILES
     SetFloat.srv
-    SetInt.srv
+	SetInt.srv
+	SaveStereo.srv
 )
 
 generate_messages(
@@ -81,6 +82,15 @@ target_link_libraries(
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${PCL_LIBRARIES}
+)
+
+add_executable(
+	split_laser_frames src/split_laser_frames.cpp
+)
+target_link_libraries(
+	split_laser_frames
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
 
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

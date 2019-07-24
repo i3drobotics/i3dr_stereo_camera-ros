@@ -23,7 +23,7 @@
    
     <group if="$(arg stereo_cal)">   
         <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal" output="screen"
-            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size) --no-service-check">
             <remap from="right" to="/$(arg camera_namespace)/right/image_raw"/>
             <remap from="left" to="/$(arg camera_namespace)/left/image_raw"/>
             <remap from="right_camera" to="/$(arg camera_namespace)/right"/>

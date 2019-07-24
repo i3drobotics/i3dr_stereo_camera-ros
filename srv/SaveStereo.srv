@@ -1,0 +1,6 @@
+string folderpath
+bool save_rectified
+bool save_disparity
+bool save_point_cloud
+---
+string res

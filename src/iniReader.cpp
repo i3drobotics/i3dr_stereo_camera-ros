@@ -1,4 +1,7 @@
 #include "iniReader.h"
+#include <ros/ros.h>
+#include <ros/console.h>
+#include <ros/param.h>
 
 void iniReader::init(std::string ini_file){
     ini_settings = extract_settings(ini_file);
@@ -9,9 +12,11 @@ std::vector<std::string> iniReader::extract_lines(std::string ini_file){
     std::string line;
     std::ifstream file(ini_file);
     while(std::getline(file,line)){
-        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
-        line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
-        lines.push_back(line);
+        if (!(line == "" || line == "\n" || line == "\r")){
+            line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+            line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+            lines.push_back(line);
+        }
     }
     return (lines);
 }
@@ -76,8 +81,10 @@ std::string iniReader::value(std::string groupName, std::string varName, std::st
                     }
                 }
             }
+            ROS_INFO("variable '%s' not found in group '%s'",varName.c_str(),groupName.c_str());
             return "variable not found in group";
         }
     }
+    ROS_INFO("group '%s' not found",groupName.c_str());
     return "group not found";
 }
