@@ -57,7 +57,7 @@ int JR_StereoSGBM = 2;
 ros::Publisher _disparity_pub, _rect_l_pub, _rect_r_pub;
 std::string _frame_id;
 int _stereo_algorithm = JR_StereoSGBM;
-/*
+
 int _min_disparity = 9;
 int _disparity_range = 64;
 int _correlation_window_size = 15;
@@ -69,7 +69,8 @@ int _disp12MaxDiff = 0;
 float _p1 = 200;
 float _p2 = 400;
 bool _interp = false;
-*/
+
+/* 
 int _min_disparity = -25;
 int _disparity_range = 17;
 int _correlation_window_size = 3;
@@ -81,7 +82,11 @@ int _disp12MaxDiff = 0;
 float _p1 = 1.19;
 float _p2 = 1.21;
 bool _interp = false;
+*/
+
 std::string _jr_config_file = "/home/i3dr/i3dr_tools_ros/i3dr_tools_ros_WS/src/i3dr_cameras/i3dr_stereo_camera/ini/JR_matchingparam_without_interpolation.cfg";
+
+
 cv::Mat _Kl, _Dl, _Rl, _Pl;
 cv::Mat _Kr, _Dr, _Rr, _Pr;
 
@@ -691,7 +696,7 @@ int main(int argc, char **argv)
   if (p_nh.getParam("p1", p1))
   {
     _p1 = p1;
-    ROS_INFO("p2: %f", _p1);
+    ROS_INFO("p1: %f", _p1);
   }
   if (p_nh.getParam("p2", p2))
   {

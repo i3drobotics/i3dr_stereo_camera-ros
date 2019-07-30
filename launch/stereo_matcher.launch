@@ -18,8 +18,8 @@
     <arg name="speckle_size" default="1000" />
     <arg name="prefilter_size" default="147" />
     <arg name="prefilter_cap" default="7" />
-    <arg name="p1" default="0"/>
-    <arg name="p2" default="0"/>
+    <arg name="p1" default="200"/>
+    <arg name="p2" default="400"/>
     <arg name="interp" default="false"/>
 
     <arg name="left_image_topic" default="left/image_raw"/>

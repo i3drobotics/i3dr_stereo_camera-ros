@@ -34,6 +34,7 @@ add_service_files(
     SetFloat.srv
 	SetInt.srv
 	SaveStereo.srv
+	ConfigLaser.srv
 )
 
 generate_messages(

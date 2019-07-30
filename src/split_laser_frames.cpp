@@ -15,6 +15,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv/cv.hpp>
 
+#include <i3dr_stereo_camera/ConfigLaser.h>
+
 std::string _non_laser_namespace = "non_laser";
 std::string _with_laser_namespace = "with_laser";
 ros::Publisher _with_laser_l_img_pub, _with_laser_r_img_pub, _with_laser_l_info_pub, _with_laser_r_info_pub;
