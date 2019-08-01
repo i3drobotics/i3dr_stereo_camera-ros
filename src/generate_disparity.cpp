@@ -732,8 +732,8 @@ int main(int argc, char **argv)
   _disparity_pub = nh.advertise<stereo_msgs::DisparityImage>(ns + "/disparity", 1, true);
   _rect_l_pub = nh.advertise<sensor_msgs::Image>(ns + "/left/image_rect", 1, true);
   _rect_r_pub = nh.advertise<sensor_msgs::Image>(ns + "/right/image_rect", 1, true);
-  _point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/i3dr_points2", 1);
-  _point_cloud_normal_pub = nh.advertise<PointCloudRGBNormal>(ns + "/i3dr_points2_normal", 1);
+  _point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2", 1);
+  _point_cloud_normal_pub = nh.advertise<PointCloudRGBNormal>(ns + "/points2_normal", 1);
 
   // Start services
   ros::ServiceServer srv_save_stereo = nh.advertiseService("save_stereo", save_stereo);
