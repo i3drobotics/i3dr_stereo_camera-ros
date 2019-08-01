@@ -11,11 +11,12 @@ find_package(Boost REQUIRED COMPONENTS thread system)
 
 # build with i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=ON'
 # build without i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=OFF'
-option(ENABLE_I3DR_ALG "Use I3DR Matching algorithm" ON)
+option(ENABLE_I3DR_ALG "Use I3DR Matching algorithm" OFF)
 if (ENABLE_I3DR_ALG)
 	#Add FindPhobos.cmake directory to CMAKE_MODULE_PATH
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 	find_package(Phobos REQUIRED)
+	add_definitions(-DENABLE_I3DR_ALG)
 else (ENABLE_I3DR_ALG)
 	find_package(OpenCV REQUIRED)
 endif()
@@ -64,7 +65,7 @@ if (PHOBOS_FOUND)
 else (PHOBOS_FOUND)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
 	add_executable(
-		generate_disparity src/generate_disparity_no_jr.cpp
+		generate_disparity src/generate_disparity.cpp
 	)
 endif()
 

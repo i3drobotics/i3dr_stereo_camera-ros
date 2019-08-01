@@ -33,7 +33,14 @@
 #include <i3dr_stereo_camera/SaveStereo.h>
 
 #include <boost/filesystem.hpp>
-#include <matcherJrsgm.h>
+
+#ifndef ENABLE_I3DR_ALG
+  #warning "I3DR Algorithm = OFF"
+#endif
+#ifdef ENABLE_I3DR_ALG
+  #include <matcherJrsgm.h>
+  #warning "I3DR Algorithm = ON"
+#endif
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
@@ -252,6 +259,7 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
       disp = disparity_filter;
     }
   }
+  #ifdef ENABLE_I3DR_ALG
   else if (algorithm == JR_StereoSGBM)
   {
     ROS_INFO("initalsing jr matcher");
@@ -273,6 +281,7 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
       // TODO impliment backward matching filter for JR
     }
   }
+  #endif
   return disp;
 }
 
