@@ -1,5 +1,9 @@
 # I3DR Stereo Camera ROS package
 
+This is the generic stereo camera package for use with Industial 3D Robotics cameras. To avoid repeated code this package contains launchers and the like that would be the same across all i3dr stereo camera packages (e.g. stereo_matcher).
+
+This package also includes all the nodes needed for stereo matching with the I3D Stereo Matcher.
+
 ## Basler
 
 ### IMPORTANT
