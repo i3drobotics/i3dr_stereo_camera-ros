@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--XML-->
+<launch>
+
+    <arg name="rviz" default="false" />
+
+    <arg name="camera_name" default="phobos_nuclear"/>
+    <arg name="package" value="i3dr_$(arg camera_name)"/>
+
+    <!-- SETUP ROBOT MODEL -->
+    <arg name="camera_urdf_file" value="$(eval find(arg('package')) + '/urdf/' + arg('camera_name') + '_scene.urdf.xacro')"/>
+
+    <param name="$(arg camera_name)_robot_description" command="$(find xacro)/xacro $(arg camera_urdf_file)" />
+    <arg name="use_tf_static" default="false"/>
+    <node name="robot_state_publisher_phobos_nuclear" pkg="robot_state_publisher" type="state_publisher">
+        <remap from="robot_description" to="$(arg camera_name)_robot_description"/>
+        <param name="use_tf_static" value="$(arg use_tf_static)"/>
+    </node>
+
+    <!-- DISPLAY -->
+    <arg name="camera_rviz_file" value="$(eval find(arg('package')) + '/rviz/camera_scene.rviz')"/>
+    <!-- run rviz with config file -->
+    <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rivz" args="-d $(arg camera_rviz_file)"/>
+
+</launch>
