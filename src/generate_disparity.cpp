@@ -34,12 +34,8 @@
 
 #include <boost/filesystem.hpp>
 
-#ifndef ENABLE_I3DR_ALG
-  #warning "I3DR Algorithm = OFF"
-#endif
 #ifdef ENABLE_I3DR_ALG
   #include <matcherJrsgm.h>
-  #warning "I3DR Algorithm = ON"
 #endif
 
 #include <pcl_ros/point_cloud.h>
