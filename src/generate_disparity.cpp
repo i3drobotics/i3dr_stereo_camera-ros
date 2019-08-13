@@ -97,6 +97,7 @@ cv::Mat _stereo_left, _stereo_right, _stereo_left_rect, _stereo_right_rect, _ste
 PointCloudRGB _stereo_point_cloud_RGB;
 
 bool isInitParamConfig = true;
+int save_index = 0;
 
 ros::Publisher _point_cloud_pub, _point_cloud_normal_pub;
 
@@ -104,6 +105,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
                  i3dr_stereo_camera::SaveStereo::Response &res)
 {
   ROS_INFO("Saving stereo data");
+  save_index++;
   if (_stereo_left.empty() || _stereo_right.empty())
   {
     res.res = "Missing stereo images";
@@ -112,8 +114,8 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
   }
   else
   {
-    cv::imwrite(req.folderpath + "/left.png", _stereo_left);
-    cv::imwrite(req.folderpath + "/right.png", _stereo_right);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l.png", _stereo_left);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_r.png", _stereo_right);
   }
 
   if (req.save_rectified)
@@ -124,8 +126,8 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       ROS_ERROR("%s", res.res.c_str());
       return false;
     }
-    cv::imwrite(req.folderpath + "/left_rect.png", _stereo_left_rect);
-    cv::imwrite(req.folderpath + "/right_rect.png", _stereo_right_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l_rect.png", _stereo_left_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_r_rect.png", _stereo_right_rect);
   }
   if (req.save_disparity)
   {
@@ -135,7 +137,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       ROS_ERROR("%s", res.res.c_str());
       return false;
     }
-    cv::imwrite(req.folderpath + "/disp.png", _stereo_disparity);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_disp.png", _stereo_disparity);
   }
 
   res.res = "Saved stereo data: " + req.folderpath;

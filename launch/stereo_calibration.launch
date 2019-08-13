@@ -12,6 +12,7 @@
     <arg name="approximate_sync" default="true" />
 
     <arg name="camera_namespace" default="stereo" />
+    <arg name="camera_non_laser_namespace" default="$(arg camera_namespace)" />
 
     <arg name="stereo_cal" default="true"/>
     <arg name="single_cal" default="false"/>
@@ -24,8 +25,8 @@
     <group if="$(arg stereo_cal)">   
         <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal" output="screen"
             args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size) --no-service-check">
-            <remap from="right" to="/$(arg camera_namespace)/right/image_raw"/>
-            <remap from="left" to="/$(arg camera_namespace)/left/image_raw"/>
+            <remap from="right" to="/$(arg camera_non_laser_namespace)/right/image_raw"/>
+            <remap from="left" to="/$(arg camera_non_laser_namespace)/left/image_raw"/>
             <remap from="right_camera" to="/$(arg camera_namespace)/right"/>
             <remap from="left_camera" to="/$(arg camera_namespace)/left"/>
         </node>
@@ -33,12 +34,12 @@
     <group if="$(arg single_cal)">   
         <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_left" output="screen"
             args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
-            <remap from="image" to="/$(arg camera_namespace)/left/image_raw"/>
+            <remap from="image" to="/$(arg camera_non_laser_namespace)/left/image_raw"/>
             <remap from="camera" to="/$(arg camera_namespace)/left"/>
         </node>
         <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_right" output="screen"
             args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
-            <remap from="image" to="/$(arg camera_namespace)/right/image_raw"/>
+            <remap from="image" to="/$(arg camera_non_laser_namespace)/right/image_raw"/>
             <remap from="camera" to="/$(arg camera_namespace)/right"/>
         </node>
     </group>

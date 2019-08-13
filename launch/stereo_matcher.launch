@@ -107,7 +107,7 @@
 
     <!-- Convert disparity to depth -->
     <group ns="$(arg camera_namespace)">
-        <node pkg="nodelet" type="nodelet" name="i3dr_disparity2depth_$(arg camera_name)_$(arg suffix)" args="standalone rtabmap_ros/disparity_to_depth"/>
+        <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="i3dr_disparity2depth_$(arg camera_name)_$(arg suffix)"/>
     </group>
 
     <!-- DISPLAY -->

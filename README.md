@@ -4,6 +4,21 @@ This is the generic stereo camera package for use with Industial 3D Robotics cam
 
 This package also includes all the nodes needed for stereo matching with the I3D Stereo Matcher.
 
+## Calibration
+
+Calibration is done using the launch file 'stereo_calibration', or using the argument 'calibrate:=true' when launching of the i3dr camera launchers.
+
+```bash
+roslaunch i3dr_phobos_nuclear phobos_nuclear.launch calibrate:=true
+```
+
+This uses the cameracalibrator node in image_pipeline and needs to be set to executable to able to run using the following command:
+
+```bash
+sudo chmod +x src/image_pipeline/camera_calibration/nodes/cameracalibrator.py
+sudo chmod +x src/image_pipeline/camera_calibration/nodes/cameracheck.py
+```
+
 ## Basler
 
 ### IMPORTANT

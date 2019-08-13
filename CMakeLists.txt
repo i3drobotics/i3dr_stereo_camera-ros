@@ -95,6 +95,15 @@ target_link_libraries(
 	${OpenCV_LIBRARIES}
 )
 
+add_executable(
+	disparity_to_depth src/disparity_to_depth.cpp
+)
+target_link_libraries(
+	disparity_to_depth
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+)
+
 add_dependencies(split_laser_frames ${PROJECT_NAME}_generate_messages_cpp)
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(generate_disparity ${PROJECT_NAME}_gencfg)
