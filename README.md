@@ -21,6 +21,14 @@ sudo chmod +x src/image_pipeline/camera_calibration/nodes/cameracheck.py
 
 ## Basler
 
+### Testing
+
+Phobos Nuclear uses a laser is used to assist generating 3D data to give a patten for the matching. However, this can interfere with feature matching when mapping a room (using rtabmap). Line 3 on the basler cameras is used to indicate weather the lasers are on/off. This method can be tested using the python script pypylon_laser_test.py
+
+```bash
+python pypylon_laser_test.py
+```
+
 ### IMPORTANT
 
 When using basler cameras in a multi camera setup the netword switch must be setup for jumbo frames.

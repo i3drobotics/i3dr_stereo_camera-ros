@@ -14,7 +14,7 @@
     <arg name="gain" default="100"/>
     <arg name="exposure_auto" default="false"/>
     <arg name="gain_auto" default="false"/>
-    <arg name="fps" default="5"/>
+    <arg name="fps" default="100"/>
     <!-- 0=TIS, 1=Basler -->
     <arg name="cameratype" default="0"/>
 
@@ -38,6 +38,7 @@
             <param name="enable_hardware_trigger" value="true"/>
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="1000"/>
+            <param name="enable_split_laser" value="true"/>
         </node>
 
         <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
@@ -54,10 +55,13 @@
             <param name="enable_hardware_trigger" value="true"/>
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="0"/>
+            <param name="enable_split_laser" value="true"/>
         </node>
 
+        <!--
         <remap from="/$(arg camera_namespace)/i3dr_stereo_camera_right_ctrl/set_camera_info" to="/$(arg camera_namespace)/right/set_camera_info"/>
         <remap from="/$(arg camera_namespace)/i3dr_stereo_camera_left_ctrl/set_camera_info" to="/$(arg camera_namespace)/left/set_camera_info"/>
+        -->
 
         <!-- Start the tiscamera control node for each camera -->
         <!-- (optional) set inital camera properties using the parameters [Brightness/Exposure/Gain/Exposure_Auto/Gain_Auto] -->
