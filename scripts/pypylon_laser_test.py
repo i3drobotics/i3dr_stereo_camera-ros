@@ -78,9 +78,11 @@ def main():
 
                 friendlyName = cameras[cameraContextValue].GetDeviceInfo().GetFriendlyName()
 
-                line1Status = cameras[cameraContextValue].LineSelector.SetValue("Line1")
+                cameras[cameraContextValue].LineSelector.SetValue("Line1")
+                line1Status = cameras[cameraContextValue].LineStatus.GetValue()
                 print(friendlyName + "Line 1: "+ str(line1Status))
-                line3Status = cameras[cameraContextValue].LineSelector.SetValue("Line3")
+                cameras[cameraContextValue].LineSelector.SetValue("Line3")
+                line3Status = cameras[cameraContextValue].LineStatus.GetValue()
                 print(friendlyName + "Line 3: "+ str(line3Status))
 
                 if (friendlyName == "phobos_nuclear_r (22864912)"):
