@@ -14,7 +14,7 @@
     <arg name="gain" default="100"/>
     <arg name="exposure_auto" default="false"/>
     <arg name="gain_auto" default="false"/>
-    <arg name="fps" default="100"/>
+    <arg name="fps" default="5"/>
     <!-- 0=TIS, 1=Basler -->
     <arg name="cameratype" default="0"/>
 

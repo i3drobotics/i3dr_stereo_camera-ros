@@ -23,14 +23,33 @@
     <arg name="p2" default="400"/>
     <arg name="interp" default="false"/>
 
+    <arg name="depth_max" default="10" />
+
     <arg if="$(arg split_laser)" name="left_image_topic" default="left/image_raw_with_laser"/>
     <arg if="$(arg split_laser)" name="right_image_topic" default="right/image_raw_with_laser"/>
     <arg unless="$(arg split_laser)" name="left_image_topic" default="left/image_raw"/>
     <arg unless="$(arg split_laser)" name="right_image_topic" default="right/image_raw"/>
+
     <arg if="$(arg split_laser)" name="left_image_rect_topic" default="left/image_rect_with_laser"/>
     <arg if="$(arg split_laser)" name="right_image_rect_topic" default="right/image_rect_with_laser"/>
     <arg unless="$(arg split_laser)" name="left_image_rect_topic" default="left/image_rect"/>
     <arg unless="$(arg split_laser)" name="right_image_rect_topic" default="right/image_rect"/>
+
+    <arg if="$(arg split_laser)" name="left_image_color_topic" default="left/image_color_with_laser"/>
+    <arg if="$(arg split_laser)" name="right_image_color_topic" default="right/image_color_with_laser"/>
+    <arg unless="$(arg split_laser)" name="left_image_color_topic" default="left/image_color"/>
+    <arg unless="$(arg split_laser)" name="right_image_color_topic" default="right/image_color"/>
+
+    <arg if="$(arg split_laser)" name="left_image_mono_topic" default="left/image_mono_with_laser"/>
+    <arg if="$(arg split_laser)" name="right_image_mono_topic" default="right/image_mono_with_laser"/>
+    <arg unless="$(arg split_laser)" name="left_image_mono_topic" default="left/image_mono"/>
+    <arg unless="$(arg split_laser)" name="right_image_mono_topic" default="right/image_mono"/>
+
+    <arg if="$(arg split_laser)" name="left_image_rect_color_topic" default="left/image_rect_color_with_laser"/>
+    <arg if="$(arg split_laser)" name="right_image_rect_color_topic" default="right/image_rect_color_with_laser"/>
+    <arg unless="$(arg split_laser)" name="left_image_rect_color_topic" default="left/image_rect_color"/>
+    <arg unless="$(arg split_laser)" name="right_image_rect_color_topic" default="right/image_rect_color"/>
+
     <arg name="left_image_info_topic" default="left/camera_info"/>
     <arg name="right_image_info_topic" default="right/camera_info"/>
     <arg name="depth_optical_frame" default="$(arg camera_name)_depth_optical_frame"/>
@@ -76,8 +95,16 @@
         <remap from="right/image_raw" to="$(arg right_image_topic)"/>
         <remap from="left/camera_info" to="$(arg left_image_info_topic)"/>
         <remap from="right/camera_info" to="$(arg right_image_info_topic)"/>
-        <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
+
+        <remap from="right/image_color" to="$(arg right_image_color_topic)"/>
+        <remap from="right/image_mono" to="$(arg right_image_mono_topic)"/>
         <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
+        <reamp from="right/image_rect_color" to="$(arg right_image_rect_color_topic)"/>
+
+        <remap from="left/image_color" to="$(arg left_image_color_topic)"/>
+        <remap from="left/image_mono" to="$(arg left_image_mono_topic)"/>
+        <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
+        <reamp from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
     </node>
 
     <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="i3dr_disparity_$(arg camera_name)_$(arg suffix)" output="screen">
@@ -109,14 +136,11 @@
         <param name="queue_size" value="10"/>
     </node>
 
-    <!-- custom point cloud generator with normals from disparity image -->
-    <!--<node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_point_cloud" name="i3dr_point_cloud_$(arg camera_name)_$(arg suffix)" output="screen">
-        <remap from="left/image_rect" to="$(arg left_image_rect_topic)" />
-    </node>-->
-
     <!-- Convert disparity to depth -->
     <group ns="$(arg camera_namespace)">
-        <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="i3dr_disparity2depth_$(arg camera_name)_$(arg suffix)"/>
+        <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="i3dr_disparity2depth_$(arg camera_name)_$(arg suffix)" output="screen">
+            <param name="depth_max" value="$(arg depth_max)" />
+        </node>
     </group>
 
     <!-- DISPLAY -->

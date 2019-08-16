@@ -228,7 +228,7 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
   else if (algorithm == CV_StereoSGBM)
   {
     cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(64, 9);
-
+ 
     sgbm->setPreFilterCap(31);
     //sgbm->setP1(1);
     //sgbm->setP2(1);

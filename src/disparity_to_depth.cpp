@@ -39,6 +39,8 @@ image_transport::Publisher pub32f_;
 image_transport::Publisher pub16u_;
 ros::Subscriber sub_;
 
+float _depth_max = 10;
+
 void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 {
 	if (disparityMsg->image.encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) != 0)
@@ -74,13 +76,17 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 				{
 					// baseline * focal / disparity
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
-					if (publish32f)
+					if (depth < _depth_max) //ignore depth values large than user defined maximum (m)
 					{
-						depth32f.at<float>(i, j) = depth;
-					}
-					if (publish16u)
-					{
-						depth16u.at<unsigned short>(i, j) = (unsigned short)(depth * 1000.0f);
+						
+						if (publish32f)
+						{
+							depth32f.at<float>(i, j) = depth;
+						}
+						if (publish16u)
+						{
+							depth16u.at<unsigned short>(i, j) = (unsigned short)(depth * 1000.0f);
+						}
 					}
 				}
 			}
@@ -112,9 +118,18 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "generate_disparity");
+	ros::init(argc, argv, "disparity_to_depth");
 	ros::NodeHandle nh;
 	ros::NodeHandle p_nh("~");
+
+	float depth_max;
+
+	//[Optional] User defined maximum depth (m)
+	if (p_nh.getParam("depth_max", depth_max))
+	{
+		_depth_max = depth_max;
+		ROS_INFO("depth_max: %f", _depth_max);
+	}
 
 	image_transport::ImageTransport it(nh);
 	pub32f_ = it.advertise("depth", 1);
