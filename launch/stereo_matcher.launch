@@ -99,12 +99,12 @@
         <remap from="right/image_color" to="$(arg right_image_color_topic)"/>
         <remap from="right/image_mono" to="$(arg right_image_mono_topic)"/>
         <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
-        <reamp from="right/image_rect_color" to="$(arg right_image_rect_color_topic)"/>
+        <remap from="right/image_rect_color" to="$(arg right_image_rect_color_topic)"/>
 
         <remap from="left/image_color" to="$(arg left_image_color_topic)"/>
         <remap from="left/image_mono" to="$(arg left_image_mono_topic)"/>
         <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
-        <reamp from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
+        <remap from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
     </node>
 
     <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="i3dr_disparity_$(arg camera_name)_$(arg suffix)" output="screen">

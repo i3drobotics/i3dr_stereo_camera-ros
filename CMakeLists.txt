@@ -31,11 +31,12 @@ include_directories(
 )
 
 add_service_files(
-    FILES
+	FILES
     SetFloat.srv
 	SetInt.srv
 	SaveStereo.srv
-	ConfigLaser.srv
+	SaveRectified.srv
+	#ConfigLaser.srv
 )
 
 generate_messages(
@@ -84,6 +85,15 @@ target_link_libraries(
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${PCL_LIBRARIES}
+)
+
+add_executable(
+	rectify src/rectify.cpp
+)
+target_link_libraries(
+	rectify
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
 
 add_executable(

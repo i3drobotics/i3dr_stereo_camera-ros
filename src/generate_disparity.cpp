@@ -132,7 +132,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
   if (req.save_disparity)
   {
     if (_stereo_disparity.empty())
-    {
+    { 
       res.res = "Missing disparity image";
       ROS_ERROR("%s", res.res.c_str());
       return false;
