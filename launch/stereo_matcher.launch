@@ -4,8 +4,8 @@
 
     <!-- SETUP ARGUMENTS -->
     <arg name="gui" default="false"/>
-    <arg name="camera_name" default="stereo"/>
     <arg name="camera_namespace" default="stereo"/>
+    <arg name="camera_name" default="$(arg camera_namespace)"/>
     <arg name="split_laser" default="false"/>
     <arg name="suffix" default=""/>
 

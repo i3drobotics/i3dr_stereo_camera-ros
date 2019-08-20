@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/param.h>
+#include <ros/package.h>
 
 #include <boost/bind.hpp>
 
@@ -34,8 +35,12 @@
 
 #include <boost/filesystem.hpp>
 
+#include <stereoMatcher/matcherOpenCVBlock.h>
+#include <stereoMatcher/matcherOpenCVSGBM.h>
+
 #ifdef ENABLE_I3DR_ALG
-  #include <matcherJrsgm.h>
+//#include <matcherJrsgm.h>
+#include <stereoMatcher/JRSGM/matcherJRSGM.h>
 #endif
 
 #include <pcl_ros/point_cloud.h>
@@ -53,6 +58,13 @@ typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
 typedef message_filters::sync_policies::ApproximateTime<
     sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
     policy_t;
+
+AbstractStereoMatcher *matcher = nullptr;
+MatcherOpenCVBlock *block_matcher = nullptr;
+MatcherOpenCVSGBM *sgbm_matcher = nullptr;
+#ifdef ENABLE_I3DR_ALG
+MatcherJRSGM *jrsgm_matcher = nullptr;
+#endif
 
 int CV_StereoBM = 0;
 int CV_StereoSGBM = 1;
@@ -89,7 +101,6 @@ bool _interp = false;
 
 std::string _jr_config_file = "/home/i3dr/i3dr_tools_ros/i3dr_tools_ros_WS/src/i3dr_cameras/i3dr_stereo_camera/ini/JR_matchingparam_without_interpolation.cfg";
 
-
 cv::Mat _Kl, _Dl, _Rl, _Pl;
 cv::Mat _Kr, _Dr, _Rr, _Pr;
 
@@ -114,7 +125,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
   }
   else
   {
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l.png", _stereo_left);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_l.png", _stereo_left);
     cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_r.png", _stereo_right);
   }
 
@@ -126,8 +137,8 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       ROS_ERROR("%s", res.res.c_str());
       return false;
     }
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l_rect.png", _stereo_left_rect);
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_r_rect.png", _stereo_right_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_l_rect.png", _stereo_left_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_r_rect.png", _stereo_right_rect);
   }
   if (req.save_disparity)
   {
@@ -194,10 +205,15 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
 
   disparity_range = disparity_range > 0 ? disparity_range : ((left_image.size().width / 8) + 15) & -16;
 
-  if (algorithm == CV_StereoBM)
-  {
-    cv::Ptr<cv::StereoBM> bm = cv::StereoBM::create(64, 9);
+  matcher->setImages(&left_image, &right_image);
+  matcher->match();
+  matcher->getDisparity(disp);
 
+  /*
+  if (algorithm == CV_StereoBM)
+  { 
+    cv::Ptr<cv::StereoBM> bm = cv::StereoBM::create(64, 9);
+  
     bm->setPreFilterCap(31);
     bm->setPreFilterSize(15);
     bm->setPreFilterType(1);
@@ -256,8 +272,9 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
       wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
       disp = disparity_filter;
     }
+    
   }
-  #ifdef ENABLE_I3DR_ALG
+#ifdef ENABLE_I3DR_ALG
   else if (algorithm == JR_StereoSGBM)
   {
     ROS_INFO("initalsing jr matcher");
@@ -279,7 +296,8 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
       // TODO impliment backward matching filter for JR
     }
   }
-  #endif
+#endif
+ */
   return disp;
 }
 
@@ -606,6 +624,26 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     }
 
     _stereo_algorithm = config.stereo_algorithm;
+    if (_stereo_algorithm == 0)
+    {
+      matcher = block_matcher;
+    }
+    else if (_stereo_algorithm == 1)
+    {
+      matcher = sgbm_matcher;
+    }
+    else if (_stereo_algorithm == 2)
+    {
+#ifdef ENABLE_I3DR_ALG
+      matcher = jrsgm_matcher;
+#endif
+#ifndef ENABLE_I3DR_ALG
+      matcher = block_matcher;
+      _stereo_algorithm = 0;
+      ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
+#endif
+    }
+
     _correlation_window_size = config.correlation_window_size;
     _min_disparity = config.min_disparity;
     _disparity_range = config.disparity_range;
@@ -649,6 +687,17 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle p_nh("~");
 
+  block_matcher = new MatcherOpenCVBlock();
+  sgbm_matcher = new MatcherOpenCVSGBM();
+
+  std::string package_path = ros::package::getPath("i3dr_stereo_camera");
+  ROS_INFO("I3DR Stereo Camera Package Location: %s", package_path.c_str());
+#ifdef ENABLE_I3DR_ALG
+  std::string default_param_path = package_path + "/ini/default.param";
+  ROS_INFO("I3DR Matcher Default parameter file: %s", default_param_path.c_str());
+  //jrsgm_matcher = new MatcherJRSGM(default_param_path);
+#endif
+
   int stereo_algorithm, min_disparity, disparity_range, correlation_window_size, uniqueness_ratio, texture_threshold, speckle_size, speckle_range, disp12MaxDiff;
   float p1, p2;
   bool interp;
@@ -659,6 +708,25 @@ int main(int argc, char **argv)
   {
     _stereo_algorithm = stereo_algorithm;
     ROS_INFO("stereo_algorithm: %d", _stereo_algorithm);
+    if (_stereo_algorithm == 0)
+    {
+      matcher = block_matcher;
+    }
+    else if (_stereo_algorithm == 1)
+    {
+      matcher = sgbm_matcher;
+    }
+    else if (_stereo_algorithm == 2)
+    {
+#ifdef ENABLE_I3DR_ALG
+      matcher = jrsgm_matcher;
+#endif
+#ifndef ENABLE_I3DR_ALG
+      matcher = block_matcher;
+      _stereo_algorithm = 0;
+      ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
+#endif
+    }
   }
   if (p_nh.getParam("min_disparity", min_disparity))
   {

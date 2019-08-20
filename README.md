@@ -4,6 +4,23 @@ This is the generic stereo camera package for use with Industial 3D Robotics cam
 
 This package also includes all the nodes needed for stereo matching with the I3D Stereo Matcher.
 
+## Build
+
+### Catkin Build
+
+``` bash
+cd /path/to/repo
+catkin_make
+```
+
+### I3DR Stereo Algorithm
+
+To build with the I3DR stereo algorithm use the following command:
+
+``` bash
+catkin_make -DENABLE_I3DR_ALG=ON
+```
+
 ## Calibration
 
 Calibration is done using the launch file 'stereo_calibration', or using the argument 'calibrate:=true' when launching of the i3dr camera launchers.
