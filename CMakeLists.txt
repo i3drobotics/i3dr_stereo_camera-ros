@@ -36,7 +36,6 @@ add_service_files(
 	SetInt.srv
 	SaveStereo.srv
 	SaveRectified.srv
-	#ConfigLaser.srv
 )
 
 generate_messages(
@@ -61,27 +60,18 @@ add_definitions(${PCL_DEFINITIONS})
 
 if (PHOBOS_FOUND)
 	add_executable(
-		generate_disparity src/generate_disparity.cpp src/matcherJrsgm.cpp src/iniReader.cpp
+		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/jrsgm.cpp src/stereoMatcher/matcherJRSGM.cpp 
 	)
 else (PHOBOS_FOUND)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
 	add_executable(
-		generate_disparity src/generate_disparity.cpp
+		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp
 	)
 endif()
 
 target_link_libraries(
 	generate_disparity
 	${Phobos_LIBRARIES}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-)
-
-add_executable(
-	generate_point_cloud src/generate_point_cloud.cpp
-)
-target_link_libraries(
-	generate_point_cloud
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${PCL_LIBRARIES}

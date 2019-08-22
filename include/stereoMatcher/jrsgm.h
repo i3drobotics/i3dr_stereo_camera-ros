@@ -1,16 +1,16 @@
-#ifndef MATCHERJRSGM_H
-#define MATCHERJRSGM_H
+#ifndef JRSGM_H
+#define JRSGM_H
 
 #include <PhobosIntegration/PhobosIntegration.hpp>
-#include <iniReader.h>
+#include <iostream>
 
-class MatcherJrSGM{
+class jrsgm {
     public:
-        MatcherJrSGM(std::string &sConfigFile){
+        jrsgm(std::string &sConfigFile){
             init(sConfigFile);
         }
     
-        ~MatcherJrSGM(void){
+        ~jrsgm(void){
             if (matcher_handle != nullptr){
                 JR::Phobos::DestroyMatchStereoHandle(matcher_handle);
             }
@@ -19,8 +19,6 @@ class MatcherJrSGM{
         void parseConfig(std::string input_file);
         int getErrorDisparity();
 
-        void writeConfig(const std::string &sConfigFile);
-        void readConfig(std::string &sConfigFile);
         void setConfig();
 
         void setDisparityShift(int shift);
@@ -40,8 +38,8 @@ class MatcherJrSGM{
         bool getSubpixel(void){return params.oFinalSubPixelParameters.bCompute; }
         int getDisparityShift(void){return params.fTopPredictionShift * pow(2, params.nNumberOfPyramids-1) ; }
 
-        void compute(cv::Mat left_image, cv::Mat right_image, cv::Mat disp);
-        void backwardMatch(cv::Mat left_image, cv::Mat right_image, cv::Mat disp);
+        void compute(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp);
+        void backwardMatch(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp);
 
     private:
         JR::Phobos::TSTEREOHANDLE matcher_handle = nullptr;
@@ -49,9 +47,6 @@ class MatcherJrSGM{
         int min_disparity, disparity_range;
 
         void init(std::string &sConfigFile);
-        void initParameters(int nPyramids, JR::Phobos::SSGMParameters sgm_params);
-        JR::Phobos::SMatchingParameters parsePyramid(iniReader *settings, std::string group);
-        JR::Phobos::SSGMParameters initSGMParameters();
 };
 
-#endif // MATCHERJRSGM_H
+#endif // JRSGM_H

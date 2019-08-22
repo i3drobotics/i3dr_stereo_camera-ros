@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros/param.h>
+#include <ros/package.h>
 
 #include <boost/bind.hpp>
 
@@ -34,14 +35,20 @@
 
 #include <boost/filesystem.hpp>
 
+#include <stereoMatcher/matcherOpenCVBlock.h>
+#include <stereoMatcher/matcherOpenCVSGBM.h>
+
+//#define ENABLE_I3DR_ALG ON //TODO: REMOVE THIS
+
 #ifdef ENABLE_I3DR_ALG
-  #include <matcherJrsgm.h>
+#include <stereoMatcher/matcherJRSGM.h>
 #endif
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
+#include <pcl/io/ply_io.h>
 
 #include <string>
 
@@ -54,12 +61,17 @@ typedef message_filters::sync_policies::ApproximateTime<
     sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
     policy_t;
 
+AbstractStereoMatcher *matcher = nullptr;
+MatcherOpenCVBlock *block_matcher;
+MatcherOpenCVSGBM *sgbm_matcher;
+MatcherJRSGM *jrsgm_matcher;
+
 int CV_StereoBM = 0;
 int CV_StereoSGBM = 1;
-int JR_StereoSGBM = 2;
+int JR_StereoSGM = 2;
 ros::Publisher _disparity_pub, _rect_l_pub, _rect_r_pub;
 std::string _frame_id;
-int _stereo_algorithm = JR_StereoSGBM;
+int _stereo_algorithm = CV_StereoBM;
 
 int _min_disparity = 9;
 int _disparity_range = 64;
@@ -72,29 +84,16 @@ int _disp12MaxDiff = 0;
 float _p1 = 200;
 float _p2 = 400;
 bool _interp = false;
-
-/* 
-int _min_disparity = -25;
-int _disparity_range = 17;
-int _correlation_window_size = 3;
-int _uniqueness_ratio = 10;
-int _texture_threshold = 10;
-int _speckle_size = 1000;
-int _speckle_range = 4;
-int _disp12MaxDiff = 0;
-float _p1 = 1.19;
-float _p2 = 1.21;
-bool _interp = false;
-*/
+int _preFilterCap = 31;
+int _preFilterSize = 9;
 
 std::string _jr_config_file = "/home/i3dr/i3dr_tools_ros/i3dr_tools_ros_WS/src/i3dr_cameras/i3dr_stereo_camera/ini/JR_matchingparam_without_interpolation.cfg";
-
 
 cv::Mat _Kl, _Dl, _Rl, _Pl;
 cv::Mat _Kr, _Dr, _Rr, _Pr;
 
 cv::Mat _stereo_left, _stereo_right, _stereo_left_rect, _stereo_right_rect, _stereo_disparity;
-PointCloudRGB _stereo_point_cloud_RGB;
+PointCloudRGB::Ptr _stereo_point_cloud_RGB;
 
 bool isInitParamConfig = true;
 int save_index = 0;
@@ -114,7 +113,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
   }
   else
   {
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l.png", _stereo_left);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_l.png", _stereo_left);
     cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_r.png", _stereo_right);
   }
 
@@ -126,8 +125,8 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       ROS_ERROR("%s", res.res.c_str());
       return false;
     }
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_l_rect.png", _stereo_left_rect);
-    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) +  "_r_rect.png", _stereo_right_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_l_rect.png", _stereo_left_rect);
+    cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_r_rect.png", _stereo_right_rect);
   }
   if (req.save_disparity)
   {
@@ -138,6 +137,16 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       return false;
     }
     cv::imwrite(req.folderpath + "/" + std::to_string(save_index) + "_disp.png", _stereo_disparity);
+  }
+  if (req.save_point_cloud)
+  {
+    if (_stereo_point_cloud_RGB->empty())
+    {
+      res.res = "Missing point cloud";
+      ROS_ERROR("%s", res.res.c_str());
+      return false;
+    }
+    pcl::io::savePLYFileBinary(req.folderpath + "/" + std::to_string(save_index) + "_points.ply", *_stereo_point_cloud_RGB);
   }
 
   res.res = "Saved stereo data: " + req.folderpath;
@@ -153,133 +162,136 @@ void cameraInfo_to_KDRP(const sensor_msgs::CameraInfoConstPtr &msg_camera_info, 
   P = cv::Mat(3, 4, CV_64FC1, (void *)msg_camera_info->P.data());
 }
 
-cv::Mat generateQ(double cx, double cy, double cx1, double focal_length, double baseline)
+//Convert disparity image from opencv Mat to PCL Point Cloud XYZRGB
+PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::Ptr normals)
 {
-  cv::Mat Q(cv::Size(4, 4), CV_64FC1, cv::Scalar(0));
-  Q.at<double>(0, 0) = 1.0;
-  Q.at<double>(0, 1) = 0.0;
-  Q.at<double>(0, 2) = 0.0;
-  Q.at<double>(0, 3) = -cx; //cx
-  Q.at<double>(1, 0) = 0.0;
-  Q.at<double>(1, 1) = 1.0;
-  Q.at<double>(1, 2) = 0.0;
-  Q.at<double>(1, 3) = -cy; //cy
-  Q.at<double>(2, 0) = 0.0;
-  Q.at<double>(2, 1) = 0.0;
-  Q.at<double>(2, 2) = 0.0;
-  Q.at<double>(2, 3) = focal_length; //Focal
-  Q.at<double>(3, 0) = 0.0;
-  Q.at<double>(3, 1) = 0.0;
-  Q.at<double>(3, 2) = 1.0 / baseline;      //-1.0/BaseLine
-  Q.at<double>(3, 3) = cx - cx1 / baseline; //cx - cx'/Baseline
-  return Q;
+
+  PointCloudRGB::Ptr ptCloudTemp(new PointCloudRGB);
+  PointCloudRGBNormal::Ptr ptCloudNormals(new PointCloudRGBNormal);
+
+  pcl::PointXYZRGB point;
+  pcl::PointXYZRGBNormal pNormal;
+  uint32_t rgb = 0;
+  uchar col = 0;
+
+  point.x = 0;
+  point.y = 0;
+  point.z = 0;
+
+  pNormal.x = 0;
+  pNormal.y = 0;
+  pNormal.z = 0;
+
+  pNormal.normal_x = 0;
+  pNormal.normal_y = 0;
+  pNormal.normal_z = 0;
+
+  rgb = ((int)255) << 16 | ((int)255) << 8 | ((int)255);
+  point.rgb = *reinterpret_cast<float *>(&rgb);
+
+  pNormal.rgb = point.rgb;
+
+  ptCloudTemp->points.push_back(point);
+  ptCloudNormals->points.push_back(pNormal);
+
+  for (int i = 1; i < coords.rows - 1; i++)
+  {
+    float *reconst_ptr = coords.ptr<float>(i);
+    uchar *rgb_ptr = image.ptr<uchar>(i);
+
+    if (!rgb_ptr || !reconst_ptr)
+      return (ptCloudTemp);
+
+    for (int j = 1; j < coords.cols - 1; j++)
+    {
+      if (rgb_ptr[j] == 0)
+        continue;
+
+      point.x = reconst_ptr[3 * j];
+      point.y = reconst_ptr[3 * j + 1];
+      point.z = reconst_ptr[3 * j + 2];
+
+      if (abs(point.x) > 10)
+        continue;
+      if (abs(point.y) > 10)
+        continue;
+      if (abs(point.z) > 10)
+        continue;
+      col = rgb_ptr[j];
+
+      rgb = ((int)col) << 16 | ((int)col) << 8 | ((int)col);
+      point.rgb = *reinterpret_cast<float *>(&rgb);
+
+      //normals
+      float dzdx = (coords.at<float>(i + 1, j) - coords.at<float>(i - 1, j)) / 2.0;
+      float dzdy = (coords.at<float>(i, j + 1) - coords.at<float>(i, j - 1)) / 2.0;
+
+      cv::Vec3f d(-dzdx, -dzdy, 1.0f);
+
+      cv::Vec3f n = normalize(d);
+
+      pNormal.x = point.x;
+      pNormal.y = point.y;
+      pNormal.z = point.z;
+
+      pNormal.rgb = point.rgb;
+
+      pNormal.normal_x = n[0];
+      pNormal.normal_y = n[1];
+      pNormal.normal_z = n[2];
+
+      ptCloudNormals->points.push_back(pNormal);
+
+      ptCloudTemp->points.push_back(point);
+    }
+  }
+  pcl::copyPointCloud(*ptCloudNormals, *normals);
+  return (ptCloudTemp);
 }
 
 //Calculate disparity using left and right images
-Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_disparity, int disparity_range, int correlation_window_size, int uniqueness_ratio, int texture_threshold, int speckleSize, int speckelRange, int disp12MaxDiff, float p1, float p2, bool interp)
+Mat stereo_match(Mat left_image, Mat right_image)
 {
-  bool backwardMatch = interp;
-  cv::Mat disp, disparity_rl, disparity_filter;
+  cv::Mat disp;
   cv::Size image_size = cv::Size(left_image.size().width, left_image.size().height);
+
   // Setup for 16-bit disparity
-  cv::Mat(image_size, CV_16S).copyTo(disp);
-  cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
-  cv::Mat(image_size, CV_16S).copyTo(disparity_filter);
+  cv::Mat(image_size, CV_32F).copyTo(disp);
 
-  if ((disparity_range < 1 || disparity_range % 16 != 0) && (algorithm == CV_StereoBM || algorithm == CV_StereoSGBM))
+  matcher->setImages(&left_image, &right_image);
+  matcher->setDisparityRange(_disparity_range);
+  matcher->setWindowSize(_correlation_window_size);
+  matcher->setInterpolation(_interp);
+  if (_stereo_algorithm == CV_StereoBM || _stereo_algorithm == CV_StereoSGBM)
   {
-    ROS_ERROR("disparity_range must be a positive integer divisible by 16");
-    return disp;
-  }
+    //Functions unique to OpenCV Stereo BM & SGBM
+    matcher->setMinDisparity(_min_disparity);
+    matcher->setUniquenessRatio(_uniqueness_ratio);
+    matcher->setSpeckleFilterRange(_speckle_range);
+    matcher->setSpeckleFilterWindow(_speckle_size);
+    matcher->setPreFilterCap(_preFilterCap);
 
-  disparity_range = disparity_range > 0 ? disparity_range : ((left_image.size().width / 8) + 15) & -16;
-
-  if (algorithm == CV_StereoBM)
-  {
-    cv::Ptr<cv::StereoBM> bm = cv::StereoBM::create(64, 9);
-
-    bm->setPreFilterCap(31);
-    bm->setPreFilterSize(15);
-    bm->setPreFilterType(1);
-    bm->setBlockSize(correlation_window_size > 0 ? correlation_window_size : 9);
-    bm->setMinDisparity(min_disparity);
-    bm->setNumDisparities(disparity_range);
-    bm->setTextureThreshold(texture_threshold);
-    bm->setUniquenessRatio(uniqueness_ratio);
-    bm->setSpeckleWindowSize(speckleSize);
-    bm->setSpeckleRange(speckelRange);
-    bm->setDisp12MaxDiff(disp12MaxDiff);
-
-    bm->compute(left_image, right_image, disp);
-
-    if (backwardMatch)
+    if (_stereo_algorithm == CV_StereoBM)
     {
-      auto right_matcher = cv::ximgproc::createRightMatcher(bm);
-      right_matcher->compute(right_image, left_image, disparity_rl);
-      double wls_lambda = 8000;
-      double wls_sigma = 1.5;
-      cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(bm);
-      wls_filter->setLambda(wls_lambda);
-      wls_filter->setSigmaColor(wls_sigma);
-      wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
-      disp = disparity_filter;
+      //Functions unique to OpenCV Stereo BM
+      matcher->setTextureThreshold(_texture_threshold);
+      matcher->setPreFilterSize(_preFilterSize);
+    }
+    else
+    {
+      //Functions unique to OpenCV Stereo SGBM
+      matcher->setP1(_p1);
+      matcher->setP2(_p2);
     }
   }
-  else if (algorithm == CV_StereoSGBM)
+  else if (_stereo_algorithm == JR_StereoSGM)
   {
-    cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(64, 9);
- 
-    sgbm->setPreFilterCap(31);
-    //sgbm->setP1(1);
-    //sgbm->setP2(1);
-    sgbm->setBlockSize(correlation_window_size > 0 ? correlation_window_size : 9);
-    sgbm->setMinDisparity(min_disparity);
-    sgbm->setNumDisparities(disparity_range);
-    sgbm->setUniquenessRatio(uniqueness_ratio);
-    sgbm->setSpeckleWindowSize(speckleSize);
-    sgbm->setSpeckleRange(speckelRange);
-    sgbm->setDisp12MaxDiff(disp12MaxDiff);
-    sgbm->setP1(p1);
-    sgbm->setP2(p2);
-
-    sgbm->compute(left_image, right_image, disp);
-
-    if (backwardMatch)
-    {
-      auto right_matcher = cv::ximgproc::createRightMatcher(sgbm);
-      right_matcher->compute(right_image, left_image, disparity_rl);
-      double wls_lambda = 8000;
-      double wls_sigma = 1.5;
-      cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(sgbm);
-      wls_filter->setLambda(wls_lambda);
-      wls_filter->setSigmaColor(wls_sigma);
-      wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
-      disp = disparity_filter;
-    }
+    //Functions unique to JR Stereo SGM
   }
-  #ifdef ENABLE_I3DR_ALG
-  else if (algorithm == JR_StereoSGBM)
-  {
-    ROS_INFO("initalsing jr matcher");
-    MatcherJrSGM *matcher = new MatcherJrSGM(_jr_config_file);
-    matcher->setDisparityRange(disparity_range);
-    matcher->setDisparityShift(min_disparity);
-    matcher->setMatchCosts(p1, p2);
-    matcher->setWindowSize(correlation_window_size);
-    matcher->enableInterpolation(interp);
-    ROS_INFO("JR matcher intialised");
 
-    ROS_INFO("computing jr match");
-    matcher->compute(left_image, right_image, disp);
-    ROS_INFO("jr match complete");
+  matcher->match();
+  matcher->getDisparity(disp);
 
-    if (backwardMatch)
-    {
-      matcher->backwardMatch(left_image, right_image, disparity_rl);
-      // TODO impliment backward matching filter for JR
-    }
-  }
-  #endif
   return disp;
 }
 
@@ -291,6 +303,7 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
 
   cv::Mat Kl, Dl, Rl, Pl;
   cv::Mat Kr, Dr, Rr, Pr;
+
   cameraInfo_to_KDRP(msg_left_camera_info, Kl, Dl, Rl, Pl);
   cameraInfo_to_KDRP(msg_right_camera_info, Kr, Dr, Rr, Pr);
 
@@ -378,7 +391,7 @@ void processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
   static const int DPP = 16; // disparities per pixel
   static const double inv_dpp = 1.0 / DPP;
 
-  cv::Mat disparity16_ = stereo_match(left_rect, right_rect, _stereo_algorithm, _min_disparity, _disparity_range, _correlation_window_size, _uniqueness_ratio, _texture_threshold, _speckle_size, _speckle_range, _disp12MaxDiff, _p1, _p2, _interp);
+  cv::Mat disparity16_ = stereo_match(left_rect, right_rect);
 
   // Fill in DisparityImage image data, converting to 32-bit float
   sensor_msgs::Image &dimage = disparity.image;
@@ -425,8 +438,12 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
   const cv::Mat_<float> dmat(dimage.height, dimage.width, (float *)&dimage.data[0], dimage.step);
   cv::Mat_<cv::Vec3f> points_mat_; // scratch buffer
   model_.projectDisparityImageTo3d(dmat, points_mat_, true);
-  //cv::reprojectImageTo3D(dmat, points_mat_,Q, true);
-  //points_mat_ = reproject(dmat,msg_info_l,msg_info_r);
+
+  PointCloudRGBNormal::Ptr ptCloudNormals(new PointCloudRGBNormal);
+  cv_bridge::CvImagePtr input_image_left, input_image_right;
+  input_image_left = cv_bridge::toCvCopy(msg_img_l, "mono8");
+  _stereo_point_cloud_RGB = Mat2PCL(input_image_left->image, points_mat_, ptCloudNormals);
+
   cv::Mat_<cv::Vec3f> mat = points_mat_;
 
   // Fill in new PointCloud2 message (2D image-like layout)
@@ -594,18 +611,42 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     config.p1 = _p1;
     config.p2 = _p2;
     config.interp = _interp;
+    config.prefilter_cap = _preFilterCap;
+    config.prefilter_size = _preFilterSize;
     isInitParamConfig = false;
   }
   else
   {
     config.prefilter_size |= 0x1; // must be odd
-    if (config.stereo_algorithm == 0 || config.stereo_algorithm == 1)
+    _preFilterCap = config.prefilter_cap;
+    _preFilterSize = config.prefilter_size;
+    if (config.stereo_algorithm == CV_StereoBM || config.stereo_algorithm == CV_StereoSGBM)
     {
       config.correlation_window_size |= 0x1;                       //must be odd
       config.disparity_range = (config.disparity_range / 16) * 16; // must be multiple of 16
     }
 
     _stereo_algorithm = config.stereo_algorithm;
+    if (_stereo_algorithm == CV_StereoBM)
+    {
+      matcher = block_matcher;
+    }
+    else if (_stereo_algorithm == CV_StereoSGBM)
+    {
+      matcher = sgbm_matcher;
+    }
+    else if (_stereo_algorithm == JR_StereoSGM)
+    {
+#ifdef ENABLE_I3DR_ALG
+      matcher = jrsgm_matcher;
+#else
+      matcher = block_matcher;
+      _stereo_algorithm = CV_StereoBM;
+      config.stereo_algorithm = CV_StereoBM;
+      ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
+#endif
+    }
+
     _correlation_window_size = config.correlation_window_size;
     _min_disparity = config.min_disparity;
     _disparity_range = config.disparity_range;
@@ -620,36 +661,14 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
   }
 }
 
-void stereoImageCallback(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
-{
-  try
-  {
-    cv_bridge::CvImagePtr input_image_left, input_image_right;
-    input_image_left = cv_bridge::toCvCopy(msg_left_image, "mono8");
-    input_image_right = cv_bridge::toCvCopy(msg_right_image, "mono8");
-
-    cv::Mat left_rect = rectify(input_image_left->image, msg_left_camera_info);
-    cv::Mat right_rect = rectify(input_image_right->image, msg_right_camera_info);
-
-    publish_image(_rect_l_pub, msg_left_image, left_rect);
-    publish_image(_rect_r_pub, msg_right_image, right_rect);
-
-    Mat disp = stereo_match(left_rect, right_rect, _stereo_algorithm, _min_disparity, _disparity_range, _correlation_window_size, _uniqueness_ratio, _texture_threshold, _speckle_size, _speckle_range, _disp12MaxDiff, _p1, _p2, _interp);
-    publish_disparity(disp, _min_disparity, _disparity_range, msg_left_camera_info, msg_right_camera_info);
-  }
-  catch (cv_bridge::Exception &e)
-  {
-    ROS_ERROR("exception %s", e.what());
-  }
-}
-
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "generate_disparity");
   ros::NodeHandle nh;
   ros::NodeHandle p_nh("~");
 
-  int stereo_algorithm, min_disparity, disparity_range, correlation_window_size, uniqueness_ratio, texture_threshold, speckle_size, speckle_range, disp12MaxDiff;
+  int stereo_algorithm, min_disparity, disparity_range, correlation_window_size, uniqueness_ratio, texture_threshold, speckle_size, speckle_range, disp12MaxDiff, preFilterCap, preFilterSize;
+
   float p1, p2;
   bool interp;
   std::string frame_id, left_camera_calibration_url, right_camera_calibration_url, jr_config_file;
@@ -710,6 +729,16 @@ int main(int argc, char **argv)
     _p2 = p2;
     ROS_INFO("p2: %f", _p2);
   }
+  if (p_nh.getParam("pre_filter_cap", preFilterCap))
+  {
+    _preFilterCap = preFilterCap;
+    ROS_INFO("pre_filter_cap %d", _preFilterCap);
+  }
+  if (p_nh.getParam("pre_filter_size", preFilterSize))
+  {
+    _preFilterSize = preFilterSize;
+    ROS_INFO("pre_filter_size %d", _preFilterSize);
+  }
   if (p_nh.getParam("frame_id", frame_id))
   {
     _frame_id = frame_id;
@@ -726,8 +755,34 @@ int main(int argc, char **argv)
     ROS_INFO("interp: %s", interp ? "true" : "false");
   }
 
+  std::string empty_str = " ";
+
+  block_matcher = new MatcherOpenCVBlock(empty_str);
+  sgbm_matcher = new MatcherOpenCVSGBM(empty_str);
+#ifdef ENABLE_I3DR_ALG
+  jrsgm_matcher = new MatcherJRSGM(_jr_config_file);
+#endif
+
+  if (_stereo_algorithm == CV_StereoBM)
+  {
+    matcher = block_matcher;
+  }
+  else if (_stereo_algorithm == CV_StereoSGBM)
+  {
+    matcher = sgbm_matcher;
+  }
+  else if (_stereo_algorithm == JR_StereoSGM)
+  {
+#ifdef ENABLE_I3DR_ALG
+    matcher = jrsgm_matcher;
+#else
+    matcher = block_matcher;
+    _stereo_algorithm = CV_StereoBM;
+    ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
+#endif
+  }
+
   std::string ns = ros::this_node::getNamespace();
-  //std::string ns = "/deimos";
 
   // Dynamic parameters
   dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_DisparityConfig> server;
