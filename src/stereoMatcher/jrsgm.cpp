@@ -4,20 +4,7 @@
 void jrsgm::init(std::string &sConfigFile)
 {
   std::cout << sConfigFile << std::endl;
-  //readConfig(sConfigFile);
   JR::Phobos::ReadIniFile( params, sConfigFile );
-
-  //set default values
-  //enableInterpolation(false);
-  //enableOcclusionDetection(false);
-  //setWindowSize(9);
-  //enableSubpixel(false);
-
-  min_disparity = 0;
-  disparity_range = 65;
-
-  //setDisparityRange(21);
-  //setMatchCosts(0.5, 1.5);
   matcher_handle = JR::Phobos::CreateMatchStereoHandle(params);
 }
 
@@ -152,7 +139,6 @@ void jrsgm::enableOcclusionDetection(bool enable)
 
 void jrsgm::setConfig()
 {
-  /* Call to update the current configuration */
   if (matcher_handle != nullptr)
   {
     JR::Phobos::DestroyMatchStereoHandle(matcher_handle);

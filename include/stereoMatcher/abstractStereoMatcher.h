@@ -10,29 +10,41 @@
   instead you should subclass it to add new matchers. The class provides a common interface for image
   matching including threaded execution, forward/back matching and disparity map saving.
 */
-class AbstractStereoMatcher {
- public:
-
+class AbstractStereoMatcher
+{
+public:
   explicit AbstractStereoMatcher(std::string &param_file);
   ~AbstractStereoMatcher(void){};
 
-   //!  Set images for matching
-   /*!
+  //!  Set images for matching
+  /*!
    * @param[in] left Left image
    * @param[in] right Right image
    */
-  void setImages(cv::Mat* left, cv::Mat* right);
+  void setImages(cv::Mat *left, cv::Mat *right);
 
-  virtual void setMinDisparity(int min_disparity) = 0;
-
+  //General paramter functions
   virtual void setDisparityRange(int disparity_range) = 0;
-
   virtual void setWindowSize(int setWindowSize) = 0;
+  virtual void setInterpolation(bool enable) = 0;
 
-  virtual void setTextureThreshold(int threshold) = 0;
+  //OpenCV Stereo BM & SGBM only parameter functions
+  virtual void setMinDisparity(int min_disparity) = 0;
   virtual void setUniquenessRatio(int ratio) = 0;
   virtual void setSpeckleFilterWindow(int window) = 0;
   virtual void setSpeckleFilterRange(int range) = 0;
+  virtual void setDisp12MaxDiff(int diff) = 0;
+  virtual void setPreFilterCap(int cap) = 0;
+  
+  //OpenCV Stereo BM only parameter functions
+  virtual void setTextureThreshold(int threshold) = 0;
+  virtual void setPreFilterSize(int size) = 0;
+
+  //OpenCV Stereo SGBM only parameter functions
+  virtual void setP1(float p1) = 0;
+  virtual void setP2(float p2) = 0;
+
+  //JR SGM only parameter functions
 
   //! Perform a match with the left image as the reference. This is normally what you want.
   virtual void forwardMatch() = 0;
@@ -48,12 +60,12 @@ class AbstractStereoMatcher {
   * @param[out] dst Output Mat
   */
   void getDisparity(cv::Mat &dst);
-  
+
   //!  Get a pointer to the left image
-  cv::Mat *getLeftImage(void){return left;}
+  cv::Mat *getLeftImage(void) { return left; }
 
   //!  Get a pointer to the right image
-  cv::Mat *getRighttImage(void){return right;}
+  cv::Mat *getRighttImage(void) { return right; }
 
   virtual void match();
 
@@ -72,7 +84,6 @@ protected:
   int min_disparity = 0;
   int disparity_range = 64;
   int window_size = 9;
-
-
+  bool interpolate = false;
 };
-#endif  // ABSTRACTSTEREOMATCHER_H
+#endif // ABSTRACTSTEREOMATCHER_H

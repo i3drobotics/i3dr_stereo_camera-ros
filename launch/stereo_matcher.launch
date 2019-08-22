@@ -124,7 +124,7 @@
         <param name="p2" value="$(arg p2)" />
         <param name="interp" value="$(arg interp)" />
 
-        <param name="jr_config_file" value="$(arg jr_config_file)" />
+        <param name="jr_config_file" value="$(find i3dr_stereo_camera)/ini/default.param" />
 
         <remap from="left/image_raw" to="$(arg left_image_topic)"/>
         <remap from="right/image_raw" to="$(arg right_image_topic)"/>

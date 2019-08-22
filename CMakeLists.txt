@@ -35,6 +35,7 @@ add_service_files(
     SetFloat.srv
 	SetInt.srv
 	SaveStereo.srv
+	SaveRectified.srv
 )
 
 generate_messages(
@@ -71,15 +72,6 @@ endif()
 target_link_libraries(
 	generate_disparity
 	${Phobos_LIBRARIES}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-)
-
-add_executable(
-	generate_point_cloud src/generate_point_cloud.cpp
-)
-target_link_libraries(
-	generate_point_cloud
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
 	${PCL_LIBRARIES}

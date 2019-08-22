@@ -2,87 +2,105 @@
 
 void MatcherOpenCVSGBM::init(void)
 {
+  setupDefaultMatcher();
 
-    //TODO convert to non QT
-    /*
-  QString matcher_parameters = QStandardPaths::AppConfigLocation+"/stereo_bm_params.xml";
-  if(QFile(matcher_parameters).exists()){
-      try {
-        matcher =
-            cv::StereoSGBM::load<cv::StereoSGBM>(matcher_parameters.toStdString());
-      } catch (cv::Exception& e) {
-          qDebug() << "Error loading SGBM matching parameters: " << e.msg.c_str();
-          setupDefaultMatcher();
-      }
-  }else{
-      setupDefaultMatcher();
-  }
-  */
-    setupDefaultMatcher();
-
-    // Setup for 16-bit disparity
-    cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
-    cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
+  // Setup for 16-bit disparity
+  cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
+  cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
 }
 
 void MatcherOpenCVSGBM::setupDefaultMatcher(void)
 {
-    matcher = cv::StereoSGBM::create(0, 64, 9);
-    //setUniquenessRatio(15);
-    matcher->setDisp12MaxDiff(-1);
+  matcher = cv::StereoSGBM::create(0, 64, 9);
 }
 
 void MatcherOpenCVSGBM::forwardMatch()
 {
-    matcher->setMinDisparity(min_disparity);
+  matcher->setMinDisparity(min_disparity);
 
-    try
+  try
+  {
+    matcher->compute(*left, *right, disparity_lr);
+    if (interpolate)
     {
-        matcher->compute(*left, *right, disparity_lr);
-        /*
-    if(wls_filter){
-        backwardMatch();
-        cv::Mat disparity_filter;
-        auto wls_filter = cv::ximgproc::createDisparityWLSFilter(matcher);
-        wls_filter->setLambda(wls_lambda);
-        wls_filter->setSigmaColor(wls_sigma);
-        wls_filter->filter(disparity_lr,*left,disparity_filter,disparity_rl);
-
-        disparity_filter.convertTo(disparity_lr, CV_32F);
-    }else{
-
-        disparity_lr.convertTo(disparity_lr, CV_32F);
+      backwardMatch();
+      cv::Mat disparity_filter;
+      double wls_lambda = 8000;
+      double wls_sigma = 1.5;
+      auto wls_filter = cv::ximgproc::createDisparityWLSFilter(matcher);
+      wls_filter->setLambda(wls_lambda);
+      wls_filter->setSigmaColor(wls_sigma);
+      wls_filter->filter(disparity_lr, *left, disparity_filter, disparity_rl);
+      disparity_rl.copyTo(disparity_lr);
     }
-    */
-        disparity_lr.convertTo(disparity_lr, CV_32F);
-    }
-    catch (...)
-    {
-        std::cerr << "Error in SGBM match parameters" << std::endl;
-    }
+    disparity_lr.convertTo(disparity_lr, CV_32F);
+  }
+  catch (...)
+  {
+    std::cerr << "Error in SGBM match parameters" << std::endl;
+  }
 }
 
 void MatcherOpenCVSGBM::backwardMatch()
 {
-    auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
-    right_matcher->compute(*right, *left, disparity_rl);
+  auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
+  right_matcher->compute(*right, *left, disparity_rl);
 }
 
-void MatcherOpenCVSGBM::setMinDisparity(int min_disparity) {
-    matcher->setMinDisparity(min_disparity);
-    this->min_disparity = min_disparity;
+void MatcherOpenCVSGBM::setMinDisparity(int min_disparity)
+{
+  matcher->setMinDisparity(min_disparity);
+  this->min_disparity = min_disparity;
 }
 
-void MatcherOpenCVSGBM::setDisparityRange(int disparity_range) {
-  if ((disparity_range + min_disparity) > image_size.width) return;
-
-  if ((disparity_range > 0) && (disparity_range % 16 == 0)) {
-    this->disparity_range = disparity_range;
-    matcher->setNumDisparities(disparity_range);
-  }
+void MatcherOpenCVSGBM::setDisparityRange(int disparity_range)
+{
+  disparity_range = disparity_range > 0 ? disparity_range : ((image_size.width / 8) + 15) & -16;
+  this->disparity_range = disparity_range;
+  matcher->setNumDisparities(disparity_range);
 }
 
-void MatcherOpenCVSGBM::setWindowSize(int window_size) {
+void MatcherOpenCVSGBM::setWindowSize(int window_size)
+{
   this->window_size = window_size;
   matcher->setBlockSize(window_size);
+}
+
+void MatcherOpenCVSGBM::setUniquenessRatio(int ratio)
+{
+  matcher->setUniquenessRatio(ratio);
+}
+
+void MatcherOpenCVSGBM::setSpeckleFilterWindow(int window)
+{
+  matcher->setSpeckleWindowSize(window);
+}
+
+void MatcherOpenCVSGBM::setSpeckleFilterRange(int range)
+{
+  matcher->setSpeckleRange(range);
+}
+
+void MatcherOpenCVSGBM::setDisp12MaxDiff(int diff)
+{
+  matcher->setDisp12MaxDiff(diff);
+}
+
+void MatcherOpenCVSGBM::setInterpolation(bool enable)
+{
+  this->interpolate = enable;
+}
+
+void MatcherOpenCVSGBM::setP1(float p1)
+{
+  matcher->setP1(p1);
+}
+
+void MatcherOpenCVSGBM::setP2(float p2)
+{
+  matcher->setP2(p2);
+}
+
+void MatcherOpenCVSGBM::setPreFilterCap(int cap){
+  matcher->setPreFilterCap(cap);
 }
