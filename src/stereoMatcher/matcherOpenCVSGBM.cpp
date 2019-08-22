@@ -67,3 +67,22 @@ void MatcherOpenCVSGBM::backwardMatch()
     auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
     right_matcher->compute(*right, *left, disparity_rl);
 }
+
+void MatcherOpenCVSGBM::setMinDisparity(int min_disparity) {
+    matcher->setMinDisparity(min_disparity);
+    this->min_disparity = min_disparity;
+}
+
+void MatcherOpenCVSGBM::setDisparityRange(int disparity_range) {
+  if ((disparity_range + min_disparity) > image_size.width) return;
+
+  if ((disparity_range > 0) && (disparity_range % 16 == 0)) {
+    this->disparity_range = disparity_range;
+    matcher->setNumDisparities(disparity_range);
+  }
+}
+
+void MatcherOpenCVSGBM::setWindowSize(int window_size) {
+  this->window_size = window_size;
+  matcher->setBlockSize(window_size);
+}

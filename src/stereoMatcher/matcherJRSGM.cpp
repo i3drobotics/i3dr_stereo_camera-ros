@@ -1,4 +1,4 @@
-#include "stereoMatcher/JRSGM/matcherJRSGM.h"
+#include "stereoMatcher/matcherJRSGM.h"
 
 void MatcherJRSGM::init(void)
 {
@@ -16,9 +16,10 @@ void MatcherJRSGM::init(void)
         setupDefaultMatcher();
     }
     */
-    std::cout << param_file_ << std::endl;
-    //readConfig(sConfigFile);
-    JR::Phobos::ReadIniFile(params, param_file_);
+    //std::cout << param_file_ << std::endl;
+    
+    std::string param_file = "home/i3dr/Documents/JRIntegration/examples/deimos/JR_configs/match_test.param";
+    JR_matcher = new jrsgm(param_file);
 
     //TODO setup with ROS params
 
@@ -42,28 +43,13 @@ void MatcherJRSGM::setupDefaultMatcher(void)
 
     //setDisparityRange(21);
     //setMatchCosts(0.5, 1.5);
-    matcher_handle = JR::Phobos::CreateMatchStereoHandle(params);
 }
 
 void MatcherJRSGM::forwardMatch()
 {
-    std::string sgm_log = "";
-    try
-    {
-        JR::Phobos::MatchStereo(matcher_handle,
-                                *left,
-                                *right,
-                                cv::Mat(),
-                                cv::Mat(),
-                                disparity_lr,
-                                sgm_log,
-                                JR::Phobos::e_logInfo);
-    }
-    catch (const std::exception &ex)
-    {
-        std::cout << ex.what() << std::endl;
-    }
-    disparity_lr.convertTo(disparity_lr, CV_32F);
+    JR_matcher->compute(*left,*right,disparity_lr);
+
+    //disparity_lr.convertTo(disparity_lr, CV_32F);
 }
 
 void MatcherJRSGM::backwardMatch()

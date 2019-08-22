@@ -2,7 +2,16 @@ cmake_minimum_required(VERSION 2.6)
 
 set (Phobos_ROOT_DIR "/usr/local/Phobos")
 
-set (PHOBOS_INCLUDE_DIR ${Phobos_ROOT_DIR}/include)
+# OpenCV 3.3.1 Required for I3DR stereo algorithms
+find_package(OpenCV 3.3.1 REQUIRED)
+
+find_path(PHOBOS_INCLUDE_DIR
+    NAMES PhobosIntegration/PhobosIntegration.hpp
+    HINTS ${Phobos_ROOT_DIR}
+    PATH_SUFFIXES include
+    NO_DEFAULT_PATH
+    DOC "The Phobos include directory"
+)
 
 if (NOT PHOBOS_INCLUDE_DIR)
     message(WARNING "include directory not found")
@@ -11,7 +20,8 @@ endif()
 find_library(PHOBOS_LIBRARY 
     NAMES PhobosIntegration
     PATHS ${Phobos_ROOT_DIR}/lib
-    DOC "The Phobos library "
+    NO_DEFAULT_PATH
+    DOC "The Phobos library"
 )
 
 if (NOT PHOBOS_LIBRARY)
@@ -32,4 +42,4 @@ else(PHOBOS_FOUND)
 endif()
 
 # Tell cmake GUIs to ignore the "local" variables.
-mark_as_advanced(Phobos_ROOT_DIR PHOBOS_LIBRARY PHOBOS_LIBRARY)
+mark_as_advanced(Phobos_ROOT_DIR PHOBOS_LIBRARY PHOBOS_LIBRARY) 

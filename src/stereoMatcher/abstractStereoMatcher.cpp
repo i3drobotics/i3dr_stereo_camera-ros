@@ -1,6 +1,6 @@
 #include "stereoMatcher/abstractStereoMatcher.h"
 
-AbstractStereoMatcher::AbstractStereoMatcher(std::string param_file) {
+AbstractStereoMatcher::AbstractStereoMatcher(std::string &param_file) {
   //this->image_size = image_size;
   //cv::Mat(image_size, CV_32F).copyTo(disparity_buffer);
 }

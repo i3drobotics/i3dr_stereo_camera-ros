@@ -13,7 +13,7 @@
 class AbstractStereoMatcher {
  public:
 
-  explicit AbstractStereoMatcher(std::string param_file);
+  explicit AbstractStereoMatcher(std::string &param_file);
   ~AbstractStereoMatcher(void){};
 
    //!  Set images for matching
@@ -22,6 +22,17 @@ class AbstractStereoMatcher {
    * @param[in] right Right image
    */
   void setImages(cv::Mat* left, cv::Mat* right);
+
+  virtual void setMinDisparity(int min_disparity) = 0;
+
+  virtual void setDisparityRange(int disparity_range) = 0;
+
+  virtual void setWindowSize(int setWindowSize) = 0;
+
+  virtual void setTextureThreshold(int threshold) = 0;
+  virtual void setUniquenessRatio(int ratio) = 0;
+  virtual void setSpeckleFilterWindow(int window) = 0;
+  virtual void setSpeckleFilterRange(int range) = 0;
 
   //! Perform a match with the left image as the reference. This is normally what you want.
   virtual void forwardMatch() = 0;
@@ -60,7 +71,7 @@ protected:
 
   int min_disparity = 0;
   int disparity_range = 64;
-  int block_size = 9;
+  int window_size = 9;
 
 
 };

@@ -2,24 +2,6 @@
 
 void MatcherOpenCVBlock::init(void)
 {
-
-    //TODO convert to non QT
-    /*
-    std::string matcher_parameters = QStandardPaths::AppConfigLocation+"/stereo_bm_params.xml";
-    if(QFile(matcher_parameters).exists()){
-        try {
-            matcher = cv::StereoBM::load<cv::StereoBM>(matcher_parameters.toStdString());
-                  } catch (cv::Exception& e) {
-            qDebug() << "Error loading block matching parameters" << e.msg.c_str();
-            setupDefaultMatcher();
-        }
-    }else{
-        setupDefaultMatcher();
-    }
-    */
-
-    //TODO setup with ROS params
-
     setupDefaultMatcher();
 
     // Setup for 16-bit disparity
@@ -41,21 +23,6 @@ void MatcherOpenCVBlock::forwardMatch()
     try
     {
         matcher->compute(*left, *right, disparity_lr);
-
-        /*
-    if(wls_filter){
-        backwardMatch();
-        cv::Mat disparity_filter;
-        auto wls_filter = cv::ximgproc::createDisparityWLSFilter(matcher);
-        wls_filter->setLambda(wls_lambda);
-        wls_filter->setSigmaColor(wls_sigma);
-        wls_filter->filter(disparity_lr,*left,disparity_filter,disparity_rl);
-
-        disparity_filter.convertTo(disparity_lr, CV_32F);
-    }else{
-        disparity_lr.convertTo(disparity_lr, CV_32F);
-    }
-    */
         disparity_lr.convertTo(disparity_lr, CV_32F);
     }
     catch (...)
@@ -67,4 +34,23 @@ void MatcherOpenCVBlock::forwardMatch()
 void MatcherOpenCVBlock::backwardMatch() {
     auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
     right_matcher->compute(*right, *left, disparity_rl);
+}
+
+void MatcherOpenCVBlock::setMinDisparity(int min_disparity) {
+  matcher->setMinDisparity(min_disparity);
+  this->min_disparity = min_disparity;
+}
+
+void MatcherOpenCVBlock::setDisparityRange(int disparity_range) {
+  if ((disparity_range + min_disparity) > image_size.width) return;
+
+  if ((disparity_range > 0) && (disparity_range % 16 == 0)) {
+    this->disparity_range = disparity_range;
+    matcher->setNumDisparities(disparity_range);
+  }
+}
+
+void MatcherOpenCVBlock::setWindowSize(int window_size) {
+  this->window_size = window_size;
+  matcher->setBlockSize(window_size);
 }

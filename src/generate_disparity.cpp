@@ -39,8 +39,7 @@
 #include <stereoMatcher/matcherOpenCVSGBM.h>
 
 #ifdef ENABLE_I3DR_ALG
-//#include <matcherJrsgm.h>
-#include <stereoMatcher/JRSGM/matcherJRSGM.h>
+#include <stereoMatcher/matcherJRSGM.h>
 #endif
 
 #include <pcl_ros/point_cloud.h>
@@ -60,11 +59,8 @@ typedef message_filters::sync_policies::ApproximateTime<
     policy_t;
 
 AbstractStereoMatcher *matcher = nullptr;
-MatcherOpenCVBlock *block_matcher = nullptr;
-MatcherOpenCVSGBM *sgbm_matcher = nullptr;
-#ifdef ENABLE_I3DR_ALG
-MatcherJRSGM *jrsgm_matcher = nullptr;
-#endif
+MatcherOpenCVBlock *block_matcher;
+MatcherOpenCVSGBM *sgbm_matcher;
 
 int CV_StereoBM = 0;
 int CV_StereoSGBM = 1;
@@ -192,6 +188,7 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
   bool backwardMatch = interp;
   cv::Mat disp, disparity_rl, disparity_filter;
   cv::Size image_size = cv::Size(left_image.size().width, left_image.size().height);
+
   // Setup for 16-bit disparity
   cv::Mat(image_size, CV_16S).copyTo(disp);
   cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
@@ -206,98 +203,12 @@ Mat stereo_match(Mat left_image, Mat right_image, int algorithm, int min_dispari
   disparity_range = disparity_range > 0 ? disparity_range : ((left_image.size().width / 8) + 15) & -16;
 
   matcher->setImages(&left_image, &right_image);
+  matcher->setMinDisparity(min_disparity);
+  matcher->setDisparityRange(disparity_range);
+  matcher->setWindowSize(correlation_window_size);
   matcher->match();
   matcher->getDisparity(disp);
-
-  /*
-  if (algorithm == CV_StereoBM)
-  { 
-    cv::Ptr<cv::StereoBM> bm = cv::StereoBM::create(64, 9);
-  
-    bm->setPreFilterCap(31);
-    bm->setPreFilterSize(15);
-    bm->setPreFilterType(1);
-    bm->setBlockSize(correlation_window_size > 0 ? correlation_window_size : 9);
-    bm->setMinDisparity(min_disparity);
-    bm->setNumDisparities(disparity_range);
-    bm->setTextureThreshold(texture_threshold);
-    bm->setUniquenessRatio(uniqueness_ratio);
-    bm->setSpeckleWindowSize(speckleSize);
-    bm->setSpeckleRange(speckelRange);
-    bm->setDisp12MaxDiff(disp12MaxDiff);
-
-    bm->compute(left_image, right_image, disp);
-
-    if (backwardMatch)
-    {
-      auto right_matcher = cv::ximgproc::createRightMatcher(bm);
-      right_matcher->compute(right_image, left_image, disparity_rl);
-      double wls_lambda = 8000;
-      double wls_sigma = 1.5;
-      cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(bm);
-      wls_filter->setLambda(wls_lambda);
-      wls_filter->setSigmaColor(wls_sigma);
-      wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
-      disp = disparity_filter;
-    }
-  }
-  else if (algorithm == CV_StereoSGBM)
-  {
-    cv::Ptr<cv::StereoSGBM> sgbm = cv::StereoSGBM::create(64, 9);
-
-    sgbm->setPreFilterCap(31);
-    //sgbm->setP1(1);
-    //sgbm->setP2(1);
-    sgbm->setBlockSize(correlation_window_size > 0 ? correlation_window_size : 9);
-    sgbm->setMinDisparity(min_disparity);
-    sgbm->setNumDisparities(disparity_range);
-    sgbm->setUniquenessRatio(uniqueness_ratio);
-    sgbm->setSpeckleWindowSize(speckleSize);
-    sgbm->setSpeckleRange(speckelRange);
-    sgbm->setDisp12MaxDiff(disp12MaxDiff);
-    sgbm->setP1(p1);
-    sgbm->setP2(p2);
-
-    sgbm->compute(left_image, right_image, disp);
-
-    if (backwardMatch)
-    {
-      auto right_matcher = cv::ximgproc::createRightMatcher(sgbm);
-      right_matcher->compute(right_image, left_image, disparity_rl);
-      double wls_lambda = 8000;
-      double wls_sigma = 1.5;
-      cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_filter = cv::ximgproc::createDisparityWLSFilter(sgbm);
-      wls_filter->setLambda(wls_lambda);
-      wls_filter->setSigmaColor(wls_sigma);
-      wls_filter->filter(disp, left_image, disparity_filter, disparity_rl);
-      disp = disparity_filter;
-    }
-    
-  }
-#ifdef ENABLE_I3DR_ALG
-  else if (algorithm == JR_StereoSGBM)
-  {
-    ROS_INFO("initalsing jr matcher");
-    MatcherJrSGM *matcher = new MatcherJrSGM(_jr_config_file);
-    matcher->setDisparityRange(disparity_range);
-    matcher->setDisparityShift(min_disparity);
-    matcher->setMatchCosts(p1, p2);
-    matcher->setWindowSize(correlation_window_size);
-    matcher->enableInterpolation(interp);
-    ROS_INFO("JR matcher intialised");
-
-    ROS_INFO("computing jr match");
-    matcher->compute(left_image, right_image, disp);
-    ROS_INFO("jr match complete");
-
-    if (backwardMatch)
-    {
-      matcher->backwardMatch(left_image, right_image, disparity_rl);
-      // TODO impliment backward matching filter for JR
-    }
-  }
-#endif
- */
+ 
   return disp;
 }
 
@@ -557,7 +468,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
 
   publish_image(_rect_l_pub, msg_left_image, left_rect);
   publish_image(_rect_r_pub, msg_right_image, right_rect);
-
+ 
   // Allocate new disparity image message
   stereo_msgs::DisparityImagePtr disp_msg = boost::make_shared<stereo_msgs::DisparityImage>();
   disp_msg->header = msg_left_camera_info->header;
@@ -634,14 +545,10 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     }
     else if (_stereo_algorithm == 2)
     {
-#ifdef ENABLE_I3DR_ALG
-      matcher = jrsgm_matcher;
-#endif
-#ifndef ENABLE_I3DR_ALG
       matcher = block_matcher;
       _stereo_algorithm = 0;
+      config.stereo_algorithm = 0;
       ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
-#endif
     }
 
     _correlation_window_size = config.correlation_window_size;
@@ -687,16 +594,13 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle p_nh("~");
 
-  block_matcher = new MatcherOpenCVBlock();
-  sgbm_matcher = new MatcherOpenCVSGBM();
+  std::string empty_str = " ";
+
+  block_matcher = new MatcherOpenCVBlock(empty_str);
+  sgbm_matcher = new MatcherOpenCVSGBM(empty_str);
 
   std::string package_path = ros::package::getPath("i3dr_stereo_camera");
   ROS_INFO("I3DR Stereo Camera Package Location: %s", package_path.c_str());
-#ifdef ENABLE_I3DR_ALG
-  std::string default_param_path = package_path + "/ini/default.param";
-  ROS_INFO("I3DR Matcher Default parameter file: %s", default_param_path.c_str());
-  //jrsgm_matcher = new MatcherJRSGM(default_param_path);
-#endif
 
   int stereo_algorithm, min_disparity, disparity_range, correlation_window_size, uniqueness_ratio, texture_threshold, speckle_size, speckle_range, disp12MaxDiff;
   float p1, p2;
@@ -718,14 +622,9 @@ int main(int argc, char **argv)
     }
     else if (_stereo_algorithm == 2)
     {
-#ifdef ENABLE_I3DR_ALG
-      matcher = jrsgm_matcher;
-#endif
-#ifndef ENABLE_I3DR_ALG
-      matcher = block_matcher;
+      matcher = block_matcher; 
       _stereo_algorithm = 0;
       ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
-#endif
     }
   }
   if (p_nh.getParam("min_disparity", min_disparity))

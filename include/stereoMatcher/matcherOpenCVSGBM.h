@@ -6,14 +6,18 @@
 class MatcherOpenCVSGBM : public AbstractStereoMatcher
 {
 public:
-  explicit MatcherOpenCVSGBM()
-      : AbstractStereoMatcher("")
+  explicit MatcherOpenCVSGBM(std::string &param_file)
+      : AbstractStereoMatcher(param_file)
   {
     init();
   }
 
   void forwardMatch(void);
   void backwardMatch(void);
+
+  void setMinDisparity(int min_disparity);
+  void setDisparityRange(int disparity_range);
+  void setWindowSize(int window_size);
 
 private:
   cv::Ptr<cv::StereoSGBM> matcher;

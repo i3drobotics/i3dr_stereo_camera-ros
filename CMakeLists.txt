@@ -59,7 +59,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 if (PHOBOS_FOUND)
 	add_executable(
-		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/JRSGM/matcherJRSGM.cpp 
+		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/jrsgm.cpp src/stereoMatcher/matcherJRSGM.cpp 
 	)
 else (PHOBOS_FOUND)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
