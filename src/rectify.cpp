@@ -182,3 +182,5 @@ int main(int argc, char **argv)
   sync.registerCallback(boost::bind(&imageCb, _1, _2, _3, _4));
 
   ros::spin();
+  
+}
