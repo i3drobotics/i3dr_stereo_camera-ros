@@ -2,8 +2,8 @@
 
 void MatcherJRSGM::init(void)
 {
-    std::string param_file = "home/i3dr/Documents/JRIntegration/examples/deimos/JR_configs/match_test.param";
-    JR_matcher = new jrsgm(param_file);
+    //std::string param_file = "home/i3dr/Documents/JRIntegration/examples/deimos/JR_configs/match_test.param";
+    JR_matcher = new jrsgm(param_file_);
 
     setupDefaultMatcher();
 
@@ -19,8 +19,7 @@ void MatcherJRSGM::setupDefaultMatcher(void)
 void MatcherJRSGM::forwardMatch()
 {
     JR_matcher->compute(*left,*right,disparity_lr);
-
-    //disparity_lr.convertTo(disparity_lr, CV_32F);
+    disparity_lr.convertTo(disparity_lr, CV_32F, -16);
 }
 
 void MatcherJRSGM::backwardMatch()

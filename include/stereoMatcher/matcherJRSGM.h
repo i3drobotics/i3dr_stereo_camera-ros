@@ -8,7 +8,7 @@ class MatcherJRSGM : public AbstractStereoMatcher
 {
 public:
     explicit MatcherJRSGM(std::string &param_file)
-        : AbstractStereoMatcher(param_file)
+        : AbstractStereoMatcher(param_file), param_file_(param_file)
     {
         init();
     }
@@ -36,6 +36,8 @@ private:
 
     void init(void);
     void setupDefaultMatcher(void);
+
+    std::string param_file_;
 
     jrsgm *JR_matcher;
 };

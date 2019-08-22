@@ -256,7 +256,7 @@ Mat stereo_match(Mat left_image, Mat right_image)
   cv::Size image_size = cv::Size(left_image.size().width, left_image.size().height);
 
   // Setup for 16-bit disparity
-  cv::Mat(image_size, CV_16S).copyTo(disp);
+  cv::Mat(image_size, CV_32F).copyTo(disp);
 
   matcher->setImages(&left_image, &right_image);
   matcher->setDisparityRange(_disparity_range);
