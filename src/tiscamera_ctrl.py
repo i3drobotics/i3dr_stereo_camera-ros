@@ -3,6 +3,10 @@ import rospy
 from std_srvs.srv import Empty, EmptyResponse, SetBool, SetBoolResponse
 from i3dr_stereo_camera.srv import SetInt, SetIntResponse
 import tiscamera
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
+from std_msgs.msg import Bool
+from sensor_msgs.msg import Image
 from dynamic_reconfigure.server import Server
 from i3dr_stereo_camera.cfg import tiscamera_settingsConfig
 
@@ -40,6 +44,8 @@ class tiscamera_ctrl(object):
                 camera_frame=self.camera_frame)
             self.CD = CD
             self.cam.source
+
+            self.isLaserOn = None
 
             self.cam.start_pipeline()
 
@@ -84,14 +90,23 @@ class tiscamera_ctrl(object):
             # Start dynamic reconfigure server
             srv = Server(tiscamera_settingsConfig, self.dynamic_settings_onChange)
 
-            #create opencv window
-            #cv2.namedWindow(str(self.serial),cv2.WINDOW_NORMAL)
+            self.withLaserWindow = self.camera_name+"_with_laser"
+            self.noLaserWindow = self.camera_name+"_no_laser"
+
+            self.cvbridge = CvBridge()
+            self.trigger_sub = rospy.Subscriber("/phobos_nuclear_trigger", Bool, self.trigger_callback)
+            self.image_sub = rospy.Subscriber("/phobos_nuclear/"+self.camera_name+"/image_raw",Image,self.image_callback)
+            self.image_with_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_with_laser", Image,queue_size=10)
+            self.image_no_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_no_laser", Image,queue_size=10)
 
         else:
             # required parameters not set
             rospy.logerr("tiscamera_ctrl: Required parameter(s) not set")
             rospy.signal_shutdown(
                 "tiscamera_ctrl: Required parameter(s) not set")
+
+    def start_serial_thread(self):
+        pass
 
     def dynamic_settings_onChange(self, config, level):
         rospy.loginfo("""Reconfigure Request: {Brightness}, {Exposure_Auto}, {Gain_Auto},{Exposure}, {Gain},""".format(**config))
@@ -141,9 +156,36 @@ class tiscamera_ctrl(object):
 
         return config
 
+    def trigger_callback(self, data):
+        self.isLaserOn = data.data
+
+    def image_callback(self, data):
+        laserOn = self.isLaserOn
+        if laserOn:
+            print("laser On")
+            self.image_with_laser_pub.publish(data)
+            try:
+                cv_image = self.cvbridge.imgmsg_to_cv2(data, "mono8")
+            except CvBridgeError as e:
+                print(e)
+            resize_img = cv2.resize(cv_image,(640,480))
+            cv2.imshow(self.withLaserWindow,resize_img)
+            cv2.waitKey(1)
+        else:
+            print("laser Off")
+            self.image_no_laser_pub.publish(data)
+            try:
+                cv_image = self.cvbridge.imgmsg_to_cv2(data, "mono8")
+            except CvBridgeError as e:
+                print(e)
+            resize_img = cv2.resize(cv_image,(640,480))
+            cv2.imshow(self.noLaserWindow,resize_img)
+            cv2.waitKey(1)
+
     def spin(self):
         # start ros node
         rate = rospy.Rate(100)
+
         while not rospy.is_shutdown():
             '''
             if CD.newImageReceived is True:

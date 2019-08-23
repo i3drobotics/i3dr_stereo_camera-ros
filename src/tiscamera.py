@@ -1,19 +1,19 @@
-from gi.repository import Tcam, Gst, GLib, GObject
 import os
 import subprocess
 from collections import namedtuple
 import gi
+import numpy
+import time
 
 gi.require_version("Gst", "1.0")
 gi.require_version("Tcam", "0.1")
+
+from gi.repository import Tcam, Gst, GLib, GObject
 
 
 DeviceInfo = namedtuple("DeviceInfo", "status name identifier connection_type")
 CameraProperty = namedtuple(
     "CameraProperty", "status value min max default step type flags category group")
-
-# Disable pylint false positives
-# pylint:disable=E0712
 
 
 class Camera:
@@ -39,6 +39,8 @@ class Camera:
         self.sample = None
         self.samplelocked = False
         self.newsample = False
+        self.img_mat = None
+        self.ImageCallback = None
         print("topic_name: " + str(topic_name))
         print("node_name: " + str(node_name))
         self.topic_name = "/camera/image_raw:=/" + \
@@ -61,20 +63,6 @@ class Camera:
         if not color:
             pixelformat = "GRAY8"
         
-        '''
-        if liveview:
-            p = 'tcambin serial="%s" name=source ! video/x-raw,format=%s,width=%d,height=%d,framerate=%d/1' % (
-                serial, pixelformat, width, height, framerate,)
-            p += ' ! tee name=t'
-            p += ' t. ! queue ! videoconvert ! video/x-raw,format=RGB ,width=%d,height=%d,framerate=%d/1! shmsink socket-path=/tmp/ros_mem' % (
-                width, height, framerate,)
-            p += ' t. ! queue ! videoconvert ! ximagesink'
-        else:
-            p = 'tcambin serial="%s" name=source ! video/x-raw,format=%s,width=%d,height=%d,framerate=%d/1' % (
-                serial, pixelformat, width, height, framerate,)
-            p += ' ! videoconvert ! video/x-raw,format=RGB ,width=%d,height=%d,framerate=%d/1! shmsink socket-path=/tmp/ros_mem' % (
-                width, height, framerate,)
-        '''
         if liveview:
             p = 'tcamsrc serial="%s" name=source_%s ! video/x-raw,format=%s,width=%d,height=%d,framerate=%d/1' % (
                 serial, serial, pixelformat, width, height, framerate,)
@@ -82,11 +70,13 @@ class Camera:
             p += ' t. ! queue ! videoconvert ! video/x-raw,format=%s ,width=%d,height=%d,framerate=%d/1 ! shmsink socket-path=/tmp/ros_mem_%s' % (
                 pixelformat, width, height, framerate, serial, )
             p += ' t. ! queue ! videoconvert ! ximagesink'
+            p += '! appsink name=sink'
         else:
             p = 'tcamsrc serial="%s" name=source_%s ! video/x-raw,format=%s,width=%d,height=%d,framerate=%d/1' % (
                 serial, serial, pixelformat, width, height, framerate,)
             p += '! videoconvert ! video/x-raw,format=%s ,width=%d,height=%d,framerate=%d/1 ! shmsink socket-path=/tmp/ros_mem_%s' % (
                 pixelformat, width, height, framerate, serial, )
+            p += '! appsink name=sink'
 
         print(p)
 
@@ -96,19 +86,11 @@ class Camera:
             raise RuntimeError("Error creating pipeline: {0}".format(error))
 
         self.pipeline.set_state(Gst.State.READY)
+        self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
         if self.pipeline.get_state(10 * Gst.SECOND)[0] != Gst.StateChangeReturn.SUCCESS:
             raise RuntimeError("Failed to start video stream.")
         # Query a pointer to our source, so we can set properties.
         self.source = self.pipeline.get_by_name("source_%s" % (serial))
-
-        # Create gscam_config variable with content
-        #gscam = 'shmsrc socket-path=/tmp/ros_mem ! video/x-raw-rgb, width=%d,height=%d,framerate=%d/1' % (
-        #    width, height, framerate,)
-        #gscam += ',bpp=24,depth=24,blue_mask=16711680, green_mask=65280, red_mask=255 ! ffmpegcolorspace'
-
-        gscam = 'shmsrc socket-path=/tmp/ros_mem_%s ! video/x-raw, format=%s width=%d,height=%d,framerate=%d/1' % (
-            serial, pixelformat,width, height, framerate,)
-        gscam += '! videoconvert'
         
         t_pipe = 'video/x-raw, format=(string)%s, ' % (pixelformat)
         t_pipe += 'width=%d, height=%d,framerate=%d/1 ' % (width,height,framerate)
@@ -121,15 +103,15 @@ class Camera:
                     self.camera_name, self.camera_info,
                     self.camera_frame,
                     "_sync_sink:=true"]
-
+        
     def start_pipeline(self):
         """ Starts the camera sink pipeline and the rosrun process
 
         :return:
         """
         try:
-            #self.pipeline.set_state(Gst.State.PLAYING)
             self.pid = subprocess.Popen(self.gscam_command)
+            
         except GLib.Error as error:
             print("Error starting pipeline: {0}".format(error))
             raise

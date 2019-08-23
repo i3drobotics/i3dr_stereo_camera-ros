@@ -105,6 +105,8 @@
             <param name="Trigger" value="$(arg trigger)"/>
         </node>
 
+        <node if="$(eval cameratype == 0)" name="i3dr_stereo_camera_trigger_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_trigger.py" output="screen"/>
+
     </group>
 
 </launch>
