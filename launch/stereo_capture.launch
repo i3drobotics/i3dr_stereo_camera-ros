@@ -6,6 +6,7 @@
     <!-- Be sure to change this to your cameras serials -->
     <arg name="camera_right_serial" default="31710260"/>
     <arg name="camera_left_serial" default="31710277"/>
+
     <arg name="camera_namespace" default="stereo"/>
     <arg name="frame_width" default="2448"/>
     <arg name="frame_height" default="2048"/>
@@ -15,6 +16,7 @@
     <arg name="exposure_auto" default="false"/>
     <arg name="gain_auto" default="false"/>
     <arg name="fps" default="5"/>
+    <arg name="trigger" default="true"/>
     <!-- 0=TIS, 1=Basler -->
     <arg name="cameratype" default="0"/>
 
@@ -81,6 +83,7 @@
             <param name="Gain" value="$(arg gain)"/>
             <param name="Exposure_Auto" value="$(arg exposure_auto)"/>
             <param name="Gain_Auto" value="$(arg gain_auto)"/>
+            <param name="Trigger" value="$(arg trigger)"/>
         </node>
 
         <node if="$(eval cameratype == 0)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
@@ -96,6 +99,7 @@
             <param name="Gain" value="$(arg gain)"/>
             <param name="Exposure_Auto" value="$(arg exposure_auto)"/>
             <param name="Gain_Auto" value="$(arg gain_auto)"/>
+            <param name="Trigger" value="$(arg trigger)"/>
         </node>
 
     </group>

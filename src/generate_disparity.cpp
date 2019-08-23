@@ -64,7 +64,9 @@ typedef message_filters::sync_policies::ApproximateTime<
 AbstractStereoMatcher *matcher = nullptr;
 MatcherOpenCVBlock *block_matcher;
 MatcherOpenCVSGBM *sgbm_matcher;
-MatcherJRSGM *jrsgm_matcher;
+#ifdef ENABLE_I3DR_ALG
+  MatcherJRSGM *jrsgm_matcher;
+#endif
 
 int CV_StereoBM = 0;
 int CV_StereoSGBM = 1;

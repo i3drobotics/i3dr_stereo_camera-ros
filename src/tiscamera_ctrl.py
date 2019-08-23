@@ -43,8 +43,6 @@ class tiscamera_ctrl(object):
 
             self.cam.start_pipeline()
 
-            self.set_property('Trigger Mode', True)
-
             rospy.Service('tiscam_%s_set_brightness' % (self.serial), SetInt, self.set_brightness)
             rospy.Service('tiscam_%s_set_exposure_auto' % (self.serial), SetBool, self.set_exposure_auto)
             rospy.Service('tiscam_%s_set_gain_auto' % (self.serial), SetBool, self.set_gain_auto)
@@ -77,8 +75,13 @@ class tiscamera_ctrl(object):
                 rospy.loginfo("setting inital gain")
                 gain = rospy.get_param('~Gain')
                 self.set_property('Gain', gain)
+
+            if (rospy.has_param('~Trigger')):
+                rospy.loginfo("setting inital trigger mode")
+                trigger = rospy.get_param('~Trigger')
+                self.set_property('Trigger Mode', trigger)
                 
-            #TODO finish adding dynamic config
+            # Start dynamic reconfigure server
             srv = Server(tiscamera_settingsConfig, self.dynamic_settings_onChange)
 
             #create opencv window
@@ -93,29 +96,48 @@ class tiscamera_ctrl(object):
     def dynamic_settings_onChange(self, config, level):
         rospy.loginfo("""Reconfigure Request: {Brightness}, {Exposure_Auto}, {Gain_Auto},{Exposure}, {Gain},""".format(**config))
 
-        current_Bright = self.cam.get_property("Brightness")[1]
-        current_ExpAuto = self.cam.get_property("Exposure Auto")[1]
-        current_GainAuto = self.cam.get_property("Gain Auto")[1]
-        current_Exp = self.cam.get_property("Exposure")[1]
-        current_Gain = self.cam.get_property("Gain")[1]
+        #TODO add trigger to dynamic reconfigure
 
-        print(self.cam.get_property("Exposure"))
-        print(config["Exposure"])
+        current_Bright = None
+        current_Gain = None
+        current_Exp = None
+        current_ExpAuto = None
+        current_GainAuto = None
 
-        if current_Bright != config["Brightness"]:
-            self.set_property("Brightness",config["Brightness"])
+        try:
+            current_Bright = self.cam.get_property("Brightness")[1]
+            if current_Bright != config["Brightness"]:
+                self.set_property("Brightness",config["Brightness"])
+        except:
+            print("Failed to set property: Brightness")
 
-        if current_ExpAuto != config["Exposure_Auto"]:
-            self.set_property("Exposure Auto",config["Exposure_Auto"])
+        try:
+            current_Exp = self.cam.get_property("Exposure")[1]
+            if current_Exp != config["Exposure"]:
+                self.set_property("Exposure",config["Exposure"])
+        except:
+            print("Failed to set property: Exposure")
 
-        if current_GainAuto != config["Gain_Auto"]:
-            self.set_property("Gain Auto",config["Gain_Auto"])
+        try:
+            current_Gain = self.cam.get_property("Gain")[1]
+            if current_Gain != config["Gain"]:
+                self.set_property("Gain",config["Gain"])
+        except:
+            print("Failed to set property: Gain")
+        
+        try:
+            current_ExpAuto = self.cam.get_property("Exposure Auto")[1]
+            if current_ExpAuto != config["Exposure_Auto"]:
+                self.set_property("Exposure Auto",config["Exposure_Auto"])
+        except:
+            print("Failed to set property: Exposure Auto")
 
-        if current_Exp != config["Exposure"]:
-            self.set_property("Exposure",config["Exposure"])
-
-        if current_Gain != config["Gain"]:
-            self.set_property("Gain",config["Gain"])
+        try:
+            current_GainAuto = self.cam.get_property("Gain Auto")[1]
+            if current_GainAuto != config["Gain_Auto"]:
+                self.set_property("Gain Auto",config["Gain_Auto"])
+        except:
+            print("Failed to set property: Gain Auto")
 
         return config
 
@@ -123,12 +145,14 @@ class tiscamera_ctrl(object):
         # start ros node
         rate = rospy.Rate(100)
         while not rospy.is_shutdown():
-            #if CD.newImageReceived is True:
-            #    CD.newImageReceived = False
-            #    cv2.imshow(str(self.serial), CD.image)
-            #else:
-            #    print("no image received")
-            #cv2.waitKey(1)
+            '''
+            if CD.newImageReceived is True:
+                CD.newImageReceived = False
+                print("image recevied")
+                #cv2.imshow(str(self.serial), CD.image)
+            else:
+                print("no image received")
+            '''
             rate.sleep()
     
     def stop(self):
