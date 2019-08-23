@@ -96,4 +96,5 @@ target_link_libraries(
 )
 
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(rectify ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(generate_disparity ${PROJECT_NAME}_gencfg)
