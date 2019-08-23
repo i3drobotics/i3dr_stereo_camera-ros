@@ -46,6 +46,11 @@ Phobos Nuclear uses a laser is used to assist generating 3D data to give a patte
 python pypylon_laser_test.py
 ```
 
+**TO USE THIS SCRIPT WITH ROS KINETIC** pypylon is not natively compiled for python 2.7 on x86_64 linux machines
+
+Must be compiled from source (see pypylon readme for details)
+https://github.com/basler/pypylon#installation-from-source
+
 ### IMPORTANT
 
 When using basler cameras in a multi camera setup the netword switch must be setup for jumbo frames.
