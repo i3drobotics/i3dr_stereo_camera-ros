@@ -65,7 +65,7 @@ AbstractStereoMatcher *matcher = nullptr;
 MatcherOpenCVBlock *block_matcher;
 MatcherOpenCVSGBM *sgbm_matcher;
 #ifdef ENABLE_I3DR_ALG
-  MatcherJRSGM *jrsgm_matcher;
+MatcherJRSGM *jrsgm_matcher;
 #endif
 
 int CV_StereoBM = 0;
@@ -133,7 +133,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
   if (req.save_disparity)
   {
     if (_stereo_disparity.empty())
-    { 
+    {
       res.res = "Missing disparity image";
       ROS_ERROR("%s", res.res.c_str());
       return false;
@@ -261,35 +261,6 @@ Mat stereo_match(Mat left_image, Mat right_image)
   cv::Mat(image_size, CV_32F).copyTo(disp);
 
   matcher->setImages(&left_image, &right_image);
-  matcher->setDisparityRange(_disparity_range);
-  matcher->setWindowSize(_correlation_window_size);
-  matcher->setInterpolation(_interp);
-  if (_stereo_algorithm == CV_StereoBM || _stereo_algorithm == CV_StereoSGBM)
-  {
-    //Functions unique to OpenCV Stereo BM & SGBM
-    matcher->setMinDisparity(_min_disparity);
-    matcher->setUniquenessRatio(_uniqueness_ratio);
-    matcher->setSpeckleFilterRange(_speckle_range);
-    matcher->setSpeckleFilterWindow(_speckle_size);
-    matcher->setPreFilterCap(_preFilterCap);
-
-    if (_stereo_algorithm == CV_StereoBM)
-    {
-      //Functions unique to OpenCV Stereo BM
-      matcher->setTextureThreshold(_texture_threshold);
-      matcher->setPreFilterSize(_preFilterSize);
-    }
-    else
-    {
-      //Functions unique to OpenCV Stereo SGBM
-      matcher->setP1(_p1);
-      matcher->setP2(_p2);
-    }
-  }
-  else if (_stereo_algorithm == JR_StereoSGM)
-  {
-    //Functions unique to JR Stereo SGM
-  }
 
   matcher->match();
   matcher->getDisparity(disp);
@@ -594,7 +565,44 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   _stereo_right_rect = right_rect;
   cv_bridge::CvImagePtr disp_image = cv_bridge::toCvCopy(disp_msg->image, "32FC1");
   _stereo_disparity = disp_image->image;
-  //TODO add global point cloud for saving
+}
+
+void updateMatcher(){
+  matcher->setDisparityRange(_disparity_range);
+  matcher->setWindowSize(_correlation_window_size);
+  matcher->setInterpolation(_interp);
+
+  if (_stereo_algorithm == CV_StereoBM || _stereo_algorithm == CV_StereoSGBM)
+  {
+    //Functions unique to OpenCV Stereo BM & SGBM
+    matcher->setMinDisparity(_min_disparity);
+    matcher->setUniquenessRatio(_uniqueness_ratio);
+    matcher->setSpeckleFilterRange(_speckle_range);
+    matcher->setSpeckleFilterWindow(_speckle_size);
+    matcher->setPreFilterCap(_preFilterCap);
+  }
+  if (_stereo_algorithm == CV_StereoBM)
+  {
+    //Functions unique to OpenCV Stereo BM
+    matcher->setTextureThreshold(_texture_threshold);
+    matcher->setPreFilterSize(_preFilterSize);
+  }
+  else if (_stereo_algorithm == CV_StereoSGBM)
+  {
+    //Functions unique to OpenCV Stereo SGBM
+    matcher->setP1(_p1);
+    matcher->setP2(_p2);
+  }
+  else if (_stereo_algorithm == JR_StereoSGM)
+  {
+    //Functions unique to JR Stereo SGM
+    matcher->setP1(_p1);
+    matcher->setP2(_p2);
+    //TODO setup global parameters for occluision and shift
+    bool occlusion = false;
+    int shift = 0;
+    matcher->setOcclusionDetection(occlusion);
+  }
 }
 
 void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_t level)
@@ -660,6 +668,8 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     _p1 = config.p1;
     _p2 = config.p2;
     _interp = config.interp;
+
+    updateMatcher();
   }
 }
 
@@ -783,6 +793,8 @@ int main(int argc, char **argv)
     ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
 #endif
   }
+
+  updateMatcher();
 
   std::string ns = ros::this_node::getNamespace();
 

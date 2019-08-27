@@ -18,16 +18,17 @@ class jrsgm {
 
         void parseConfig(std::string input_file);
         int getErrorDisparity();
-
-        void setConfig();
+        void createMatcher();
 
         void setDisparityShift(int shift);
         void setDisparityRange(int n);
         void enableSubpixel(bool enable);
-        void setMatchCosts(float P1, float P2);
+        void setP1(float P1);
+        void setP2(float P2);
         void setWindowSize(int census_size);
         void enableInterpolation(bool enable);
         void enableOcclusionDetection(bool enable);
+        void enableTextureDSI(bool enable);
 
         float getP1(void){ return params.oPyramidParams[0].oSGMParams.fP1_E_W; }
         float getP2(void){ return params.oPyramidParams[0].oSGMParams.fP2_E_W; }
@@ -47,6 +48,9 @@ class jrsgm {
         int min_disparity, disparity_range;
 
         void init(std::string &sConfigFile);
+        int round_up_to_32(int val);
+        int checkMemoryDSI(int image_width, int image_height);
+        int checkMemoryCensus(int image_width, int image_height);
 };
 
 #endif // JRSGM_H

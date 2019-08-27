@@ -30,6 +30,7 @@ public:
     //Not used in OpenCV Block
     void setP1(float p1){};
     void setP2(float p2){};
+    void setOcclusionDetection(bool enable){};
 
 private:
     cv::Ptr<cv::StereoBM> matcher;

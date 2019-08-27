@@ -45,6 +45,7 @@ public:
   virtual void setP2(float p2) = 0;
 
   //JR SGM only parameter functions
+  virtual void setOcclusionDetection(bool enable) = 0;
 
   //! Perform a match with the left image as the reference. This is normally what you want.
   virtual void forwardMatch() = 0;
@@ -61,6 +62,8 @@ public:
   */
   void getDisparity(cv::Mat &dst);
 
+  void getBackDisparity(cv::Mat &dist);
+
   //!  Get a pointer to the left image
   cv::Mat *getLeftImage(void) { return left; }
 
@@ -73,7 +76,6 @@ protected:
   cv::Mat *left;
   cv::Mat *right;
 
-  cv::Mat disparity_buffer;
   cv::Mat disparity_rl;
   cv::Mat disparity_lr;
 

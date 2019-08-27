@@ -33,7 +33,7 @@ void MatcherOpenCVBlock::forwardMatch()
       wls_filter->filter(disparity_lr, *left, disparity_filter, disparity_rl);
       disparity_rl.copyTo(disparity_lr);
     }
-    disparity_lr.convertTo(disparity_lr, CV_32F);
+    //disparity_lr.convertTo(disparity_lr, CV_32F);
   }
   catch (...)
   {

@@ -30,6 +30,7 @@ public:
   //Not used in OpenCV SGBM
   void setTextureThreshold(int threshold){};
   void setPreFilterSize(int size){};
+  void setOcclusionDetection(bool enable){};
 
 private:
   cv::Ptr<cv::StereoSGBM> matcher;
