@@ -22,6 +22,7 @@
     <arg name="trigger" default="true"/>
     <!-- 0=TIS, 1=Basler -->
     <arg name="cameratype" default="0"/>
+    <arg name="split_laser" default="false"/>
 
     <!-- STEREO <MATCHER> -->
     <group ns="$(arg camera_namespace)">
@@ -43,7 +44,7 @@
             <param name="enable_hardware_trigger" value="true"/>
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="1000"/>
-            <param name="enable_split_laser" value="true"/>
+            <param name="enable_split_laser" value="$(arg split_laser)"/>
         </node>
 
         <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
@@ -60,7 +61,7 @@
             <param name="enable_hardware_trigger" value="true"/>
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="0"/>
-            <param name="enable_split_laser" value="true"/>
+            <param name="enable_split_laser" value="$(arg split_laser)"/>
         </node>
 
         <!--
@@ -87,6 +88,7 @@
             <param name="Exposure_Auto" value="$(arg exposure_auto)"/>
             <param name="Gain_Auto" value="$(arg gain_auto)"/>
             <param name="Trigger" value="$(arg trigger)"/>
+            <param name="split_laser" value="$(arg split_laser)"/>
         </node>
 
         <node if="$(eval cameratype == 0)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
@@ -103,6 +105,7 @@
             <param name="Exposure_Auto" value="$(arg exposure_auto)"/>
             <param name="Gain_Auto" value="$(arg gain_auto)"/>
             <param name="Trigger" value="$(arg trigger)"/>
+            <param name="split_laser" value="$(arg split_laser)"/>
         </node>
 
         <node if="$(eval cameratype == 0)" name="i3dr_stereo_camera_trigger_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_trigger.py" output="screen"/>

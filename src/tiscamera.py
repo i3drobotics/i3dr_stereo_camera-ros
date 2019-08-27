@@ -70,13 +70,11 @@ class Camera:
             p += ' t. ! queue ! videoconvert ! video/x-raw,format=%s ,width=%d,height=%d,framerate=%d/1 ! shmsink socket-path=/tmp/ros_mem_%s' % (
                 pixelformat, width, height, framerate, serial, )
             p += ' t. ! queue ! videoconvert ! ximagesink'
-            p += '! appsink name=sink'
         else:
             p = 'tcamsrc serial="%s" name=source_%s ! video/x-raw,format=%s,width=%d,height=%d,framerate=%d/1' % (
                 serial, serial, pixelformat, width, height, framerate,)
             p += '! videoconvert ! video/x-raw,format=%s ,width=%d,height=%d,framerate=%d/1 ! shmsink socket-path=/tmp/ros_mem_%s' % (
                 pixelformat, width, height, framerate, serial, )
-            p += '! appsink name=sink'
 
         print(p)
 

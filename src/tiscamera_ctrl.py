@@ -36,16 +36,27 @@ class tiscamera_ctrl(object):
             self.camera_name = rospy.get_param('~camera_name',"cam")
             self.camera_frame = rospy.get_param('~camera_frame',"/cam_optical_frame")
 
-            self.cam = tiscamera.Camera(
-                self.serial, self.width, self.height, self.fps, False, False,
-                topic_name="tiscamera_topic_%s" % (self.serial), node_name="tiscamera_node_%s" % (self.serial),
-                camera_info=self.camera_info,
-                camera_name=self.camera_name,
-                camera_frame=self.camera_frame)
+            isConnected = False
+            while (not isConnected and not rospy.is_shutdown()):
+                try:
+                    self.cam = tiscamera.Camera(
+                        self.serial, self.width, self.height, self.fps, False, False,
+                        topic_name="tiscamera_topic_%s" % (self.serial), node_name="tiscamera_node_%s" % (self.serial),
+                        camera_info=self.camera_info,
+                        camera_name=self.camera_name,
+                        camera_frame=self.camera_frame)
+                    isConnected = True
+                except rospy.ROSInterruptException:
+                    exit()
+                except:
+                    rospy.logerr("Failed to connect to camera. Re-trying...")
+                    rospy.sleep(3.)
+
             self.CD = CD
             self.cam.source
 
             self.isLaserOn = None
+            self.split_laser = False
 
             self.cam.start_pipeline()
 
@@ -54,6 +65,10 @@ class tiscamera_ctrl(object):
             rospy.Service('tiscam_%s_set_gain_auto' % (self.serial), SetBool, self.set_gain_auto)
             rospy.Service('tiscam_%s_set_exposure' % (self.serial), SetInt, self.set_exposure)
             rospy.Service('tiscam_%s_set_gain' % (self.serial), SetInt, self.set_gain)
+
+            if (rospy.has_param('~split_laser')):
+                split_laser = rospy.get_param('~split_laser')
+                self.split_laser = split_laser
 
             # set inital camera properties based on parameters
             # initalise rosservice for each camera property given in parameters
@@ -90,14 +105,15 @@ class tiscamera_ctrl(object):
             # Start dynamic reconfigure server
             srv = Server(tiscamera_settingsConfig, self.dynamic_settings_onChange)
 
-            self.withLaserWindow = self.camera_name+"_with_laser"
-            self.noLaserWindow = self.camera_name+"_no_laser"
+            if (self.split_laser):
+                self.withLaserWindow = self.camera_name+"_with_laser"
+                self.noLaserWindow = self.camera_name+"_no_laser"
 
-            self.cvbridge = CvBridge()
-            self.trigger_sub = rospy.Subscriber("/phobos_nuclear_trigger", Bool, self.trigger_callback)
-            self.image_sub = rospy.Subscriber("/phobos_nuclear/"+self.camera_name+"/image_raw",Image,self.image_callback)
-            self.image_with_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_with_laser", Image,queue_size=10)
-            self.image_no_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_no_laser", Image,queue_size=10)
+                self.cvbridge = CvBridge()
+                self.trigger_sub = rospy.Subscriber("/phobos_nuclear_trigger", Bool, self.trigger_callback)
+                self.image_sub = rospy.Subscriber("/phobos_nuclear/"+self.camera_name+"/image_raw",Image,self.image_callback)
+                self.image_with_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_with_laser", Image,queue_size=10)
+                self.image_no_laser_pub = rospy.Publisher("/phobos_nuclear/"+self.camera_name+"/image_raw_no_laser", Image,queue_size=10)
 
         else:
             # required parameters not set
@@ -162,39 +178,15 @@ class tiscamera_ctrl(object):
     def image_callback(self, data):
         laserOn = self.isLaserOn
         if laserOn:
-            print("laser On")
             self.image_with_laser_pub.publish(data)
-            try:
-                cv_image = self.cvbridge.imgmsg_to_cv2(data, "mono8")
-            except CvBridgeError as e:
-                print(e)
-            resize_img = cv2.resize(cv_image,(640,480))
-            cv2.imshow(self.withLaserWindow,resize_img)
-            cv2.waitKey(1)
         else:
-            print("laser Off")
             self.image_no_laser_pub.publish(data)
-            try:
-                cv_image = self.cvbridge.imgmsg_to_cv2(data, "mono8")
-            except CvBridgeError as e:
-                print(e)
-            resize_img = cv2.resize(cv_image,(640,480))
-            cv2.imshow(self.noLaserWindow,resize_img)
-            cv2.waitKey(1)
 
     def spin(self):
         # start ros node
         rate = rospy.Rate(100)
 
         while not rospy.is_shutdown():
-            '''
-            if CD.newImageReceived is True:
-                CD.newImageReceived = False
-                print("image recevied")
-                #cv2.imshow(str(self.serial), CD.image)
-            else:
-                print("no image received")
-            '''
             rate.sleep()
     
     def stop(self):

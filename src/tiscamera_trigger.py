@@ -8,10 +8,14 @@ class serialTrigger:
     def __init__(self,port='/dev/ttyACM0',baudrate=115200,topic='/phobos_nuclear_trigger'):
         self.port = port
         self.baudrate = baudrate
-        self.ser = serial.Serial(port, baudrate)
 
-        self.pub = rospy.Publisher(topic, Bool)
-        rospy.init_node('serialTrigger')
+        self.ser = None
+
+        self.open(port,baudrate)
+
+        self.pub = rospy.Publisher(topic, Bool, queue_size=10)
+        
+        rospy.init_node('serialTrigger', anonymous=True)
 
     def spin(self):
         try:
@@ -20,26 +24,43 @@ class serialTrigger:
         except rospy.ROSInterruptException:
             pass
 
+    def open(self,port,baudrate):
+        try:
+            self.port = port
+            self.baudrate = baudrate
+            self.ser = serial.Serial(port, baudrate)
+        except serial.SerialException:
+            self.ser = None
+            rospy.logerr("Failed to open serial port")
+
     def readTrigger(self):
         while not rospy.is_shutdown():
-            try:
-                data = self.ser.readline()
-            except serial.SerialException:
-                rospy.logerr("Failed to read serial port")
-            try:
-                split_data = data.rstrip().split(":")
-                if (split_data[0] == "Laser"):
-                    laser_state = split_data[1]
-                    if (laser_state == "ON"):
-                        self.pub.publish(True)
-                        print("laser:on")
-                    elif (laser_state == "OFF"):
-                        self.pub.publish(False)
-                        print("laser:off")
-                    else:
+            if (self.ser):
+                if self.ser.is_open:
+                    try:
+                        data = self.ser.readline()
+                    except serial.SerialException:
+                        rospy.logerr("Failed to read serial port")
+                    try:
+                        split_data = data.rstrip().split(":")
+                        if (split_data[0] == "Laser"):
+                            laser_state = split_data[1]
+                            if (laser_state == "ON"):
+                                self.pub.publish(True)
+                            elif (laser_state == "OFF"):
+                                self.pub.publish(False)
+                            else:
+                                rospy.logerr("Invalid serial response for trigger")
+                    except:
                         rospy.logerr("Invalid serial response for trigger")
-            except:
-                rospy.logerr("Invalid serial response for trigger")
+                else:
+                    rospy.logerr("Serial port not open. Trying to reconnect...")
+                    self.open(self.port,self.baudrate)
+                    rospy.sleep(3.)
+            else:
+                rospy.logerr("Serial object not created. Tyring to re-create...")
+                self.open(self.port,self.baudrate)
+                rospy.sleep(3.)
 
 if __name__ == '__main__':
     port_ = '/dev/ttyACM0'
