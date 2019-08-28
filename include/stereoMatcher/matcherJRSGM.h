@@ -7,14 +7,14 @@
 class MatcherJRSGM : public AbstractStereoMatcher
 {
 public:
-    explicit MatcherJRSGM(std::string &param_file)
-        : AbstractStereoMatcher(param_file), param_file_(param_file)
+    explicit MatcherJRSGM(std::string &param_file, cv::Size image_size)
+        : AbstractStereoMatcher(param_file,image_size), param_file_(param_file), image_size_(image_size)
     {
         init();
     }
 
-    void forwardMatch(void);
-    void backwardMatch(void);
+    int forwardMatch(void);
+    int backwardMatch(void);
 
     void setWindowSize(int window_size);
     void setDisparityRange(int disparity_range);
@@ -39,6 +39,7 @@ private:
     void setupDefaultMatcher(void);
 
     std::string param_file_;
+    cv::Size image_size_;
 
     jrsgm *JR_matcher;
 };

@@ -107,8 +107,7 @@
         <remap from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
     </node>
 
-    <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="i3dr_disparity_$(arg camera_name)_$(arg suffix)" output="screen">
-
+    <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" respawn="true" name="i3dr_disparity_$(arg camera_name)_$(arg suffix)" output="screen">
 
         <param name="frame_id" value="$(arg depth_optical_frame)"/>
 

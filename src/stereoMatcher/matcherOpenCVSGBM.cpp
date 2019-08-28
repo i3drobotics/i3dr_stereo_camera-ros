@@ -14,7 +14,7 @@ void MatcherOpenCVSGBM::setupDefaultMatcher(void)
   matcher = cv::StereoSGBM::create(0, 64, 9);
 }
 
-void MatcherOpenCVSGBM::forwardMatch()
+int MatcherOpenCVSGBM::forwardMatch()
 {
   matcher->setMinDisparity(min_disparity);
 
@@ -34,17 +34,20 @@ void MatcherOpenCVSGBM::forwardMatch()
       disparity_rl.copyTo(disparity_lr);
     }
     //disparity_lr.convertTo(disparity_lr, CV_32F);
+    return 0;
   }
   catch (...)
   {
     std::cerr << "Error in SGBM match parameters" << std::endl;
+    return -1;
   }
 }
 
-void MatcherOpenCVSGBM::backwardMatch()
+int MatcherOpenCVSGBM::backwardMatch()
 {
   auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
   right_matcher->compute(*right, *left, disparity_rl);
+  return 0;
 }
 
 void MatcherOpenCVSGBM::setMinDisparity(int min_disparity)

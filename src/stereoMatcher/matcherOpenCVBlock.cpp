@@ -14,10 +14,8 @@ void MatcherOpenCVBlock::setupDefaultMatcher(void)
   matcher = cv::StereoBM::create(64, 9);
 }
 
-void MatcherOpenCVBlock::forwardMatch()
+int MatcherOpenCVBlock::forwardMatch()
 {
-  //matcher->setMinDisparity(min_disparity);
-
   try
   {
     matcher->compute(*left, *right, disparity_lr);
@@ -33,18 +31,21 @@ void MatcherOpenCVBlock::forwardMatch()
       wls_filter->filter(disparity_lr, *left, disparity_filter, disparity_rl);
       disparity_rl.copyTo(disparity_lr);
     }
+    return 0;
     //disparity_lr.convertTo(disparity_lr, CV_32F);
   }
   catch (...)
   {
     std::cerr << "Error in OpenCV block match parameters" << std::endl;
+    return -1;
   }
 }
 
-void MatcherOpenCVBlock::backwardMatch()
+int MatcherOpenCVBlock::backwardMatch()
 {
   auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
   right_matcher->compute(*right, *left, disparity_rl);
+  return 0;
 }
 
 void MatcherOpenCVBlock::setMinDisparity(int min_disparity)

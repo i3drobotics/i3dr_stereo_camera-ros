@@ -1,8 +1,9 @@
 #include <stereoMatcher/jrsgm.h>
 
 //Initialise matcher
-void jrsgm::init(std::string &sConfigFile)
+void jrsgm::init(std::string &sConfigFile, cv::Size _image_size)
 {
+  this->image_size = _image_size;
   std::cout << sConfigFile << std::endl;
   JR::Phobos::ReadIniFile(params, sConfigFile);
   createMatcher();
@@ -18,17 +19,25 @@ int jrsgm::round_up_to_32(int val)
   return round(val / 32) * 32;
 }
 
-int jrsgm::checkMemoryAvailable()
+size_t jrsgm::checkMemoryAvailable()
 {
   //re-calculate current CUDA GPU memory
   cudaMemory.calcMem();
-  //get CUDA GPU memory free (bytes)
-  return (cudaMemory.getMemFree());
+  size_t memFree = cudaMemory.getMemFree();
+  //size_t memUsed = cudaMemory.getMemUsed();
+  //size_t memTotal = cudaMemory.getMemTotal();
+  /*
+  std::cout << "GPU MEMORY FREE: " << float(memFree) / 1073741824. << std::endl;
+  std::cout << "GPU MEMORY USED: " << float(memUsed) / 1073741824. << std::endl;
+  std::cout << "GPU MEMORY TOTAL: " << float(memTotal) / 1073741824. << std::endl;
+  */
+  return (memFree);
 }
 
 int jrsgm::checkMemoryCensus(int image_width, int image_height)
 {
   int num_of_gpus = params.oGPUs.size();
+  int num_of_pyramids = params.nNumberOfPyramids;
   int window_size_x = params.oPyramidParams[0].oMetricParams.nWindowSizeX;
   int window_size_y = params.oPyramidParams[0].oMetricParams.nWindowSizeY;
   int num_of_slanted_window_scales = params.oPyramidParams[0].oMetricParams.nNumberOfScales;
@@ -45,12 +54,13 @@ int jrsgm::checkMemoryCensus(int image_width, int image_height)
   {
     NumberOfNeededCensusBytes = round_up_to_32((window_size_x * window_size_y - 1) * (1 + have_no_data)) / 4 * (num_of_slanted_window_scales + num_of_slanted_window_shifts * 2);
   }
-  int MemoryCensus_PerGPU = 2 * image_width * image_height * NumberOfNeededCensusBytes / num_of_gpus;
+  int MemoryCensus_PerGPU = (num_of_pyramids * (2 * image_width * image_height * NumberOfNeededCensusBytes)) / num_of_gpus;
   return MemoryCensus_PerGPU;
 }
 
 int jrsgm::checkMemoryDSI(int image_width, int image_height)
 {
+  int num_of_pyramids = params.nNumberOfPyramids;
   int num_of_disparities = params.oPyramidParams[0].nMaximumNumberOfDisparities;
   bool enTextureDSI = params.oPyramidParams[0].oSGMParams.bUseDSITexture;
   int texture_dsi;
@@ -62,72 +72,114 @@ int jrsgm::checkMemoryDSI(int image_width, int image_height)
   {
     texture_dsi = 1;
   }
-  int MemoryDSI_PerGPU = 2 * image_width * image_height * num_of_disparities;
+  int MemoryDSI_PerGPU = num_of_pyramids * (2 * image_width * image_height * num_of_disparities);
   return MemoryDSI_PerGPU;
 }
 
-bool jrsgm::isMemoryValid(int image_width, int image_height)
+int jrsgm::checkMemoryExtra(int image_width, int image_height)
+{
+  int num_of_pyramids = params.nNumberOfPyramids;
+  return (num_of_pyramids * (image_width * image_height * 4 * 10));
+}
+
+bool jrsgm::checkMemoryValid(int image_width, int image_height)
 {
   int memoryDSI = checkMemoryDSI(image_width, image_height);
   int memoryCensus = checkMemoryCensus(image_width, image_height);
-  int memoryAvaiable = checkMemoryAvailable();
-  std::cout << "GPU MEMORY DSI: " << memoryDSI << std::endl;
-  std::cout << "GPU MEMORY CENSUS: " << memoryCensus << std::endl;
-  std::cout << "GPU MEMORY AVAILABLE: " << memoryAvaiable << std::endl;
-  if ((memoryDSI + memoryCensus) < memoryAvaiable){
+  int memoryExtra = checkMemoryExtra(image_width, image_height);
+  int memoryUsed = memoryDSI + memoryCensus + memoryExtra;
+  size_t memoryAvaiable = checkMemoryAvailable();
+  std::cout << "Image size: (" << image_width << "," << image_height << ")" << std::endl;
+  std::cout << "GPU MEMORY USED: " << float(memoryUsed) / 1073741824. << std::endl;
+  std::cout << "GPU MEMORY AVAILABLE: " << float(memoryAvaiable) / 1073741824. << std::endl;
+  if ((memoryUsed) < memoryAvaiable)
+  {
+    isMemoryValid = true;
     return true;
-  } else {
+  }
+  else
+  {
+    isMemoryValid = false;
     return false;
   }
 }
 
-//compute disparity
-void jrsgm::compute(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp)
+void jrsgm::setImages(cv::Mat left_image, cv::Mat right_image)
 {
-  if (isMemoryValid(left_image.size().width, left_image.size().height))
+  left_image.copyTo(this->image_left);
+  right_image.copyTo(this->image_right);
+  image_size = left_image.size();
+}
+
+//compute disparity
+int jrsgm::compute(cv::Mat &disp)
+{
+  if (matcher_handle != nullptr)
+  {
+    if (isMemoryValid)
+    {
+      std::string sgm_log = "./sgm_log.txt";
+      try
+      {
+        JR::Phobos::MatchStereo(matcher_handle,
+                                image_left,
+                                image_right,
+                                cv::Mat(),
+                                cv::Mat(),
+                                disp,
+                                sgm_log,
+                                JR::Phobos::e_logError);
+      }
+      catch (...)
+      {
+        std::cerr << "FAILED TO COMPUTE" << std::endl;
+        return -1;
+      }
+    }
+    else
+    {
+      std::cerr << "Matcher handle not found" << std::endl;
+      createMatcher();
+      return -1;
+    }
+  }
+  else
+  {
+    return -2;
+    std::cerr << "Invalid GPU memory for stereo match" << std::endl;
+  }
+  return 0;
+}
+
+//backward match disparity
+int jrsgm::backwardMatch(cv::Mat &disp)
+{
+  if (isMemoryValid)
   {
     std::string sgm_log = "./sgm_log.txt";
     try
     {
       JR::Phobos::MatchStereo(matcher_handle,
-                              left_image,
-                              right_image,
+                              image_left,
+                              image_right,
                               cv::Mat(),
                               cv::Mat(),
                               disp,
                               sgm_log,
                               JR::Phobos::e_logError);
     }
-    catch (const std::exception &ex)
+    catch (...)
     {
-      std::cerr << ex.what() << std::endl;
+      std::cerr << "FAILED TO COMPUTE" << std::endl;
+      return -1;
     }
-  } else {
-    std::cerr << "NOT ENOUGH GPU MEMORY AVAILABLE" << std::endl;
   }
-}
-
-//backward match disparity
-void jrsgm::backwardMatch(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp)
-{
-  cv::Mat left_joint, right_joint;
-  std::string sgm_log = "./sgm_log.txt";
-
-  try
+  else
   {
-    JR::Phobos::MatchStereo(matcher_handle,
-                            right_image,
-                            left_image,
-                            cv::Mat(),
-                            cv::Mat(),
-                            disp,
-                            sgm_log,
-                            JR::Phobos::e_logError);
+    return -2;
+    std::cerr << "Invalid GPU memory for stereo match" << std::endl;
   }
-  catch (const std::exception &ex)
-  {
-    std::cerr << ex.what() << std::endl;
-  }
+  return 0;
 }
 
 void jrsgm::setP1(float P1)
@@ -158,11 +210,6 @@ void jrsgm::setP2(float P2)
 
 void jrsgm::setWindowSize(int census_size)
 {
-  if (census_size > 13)
-  {
-    std::cout << "census size " << census_size << " is too large. Will use maximum 13" << std::endl;
-    census_size = 13;
-  }
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oMetricParams.nWindowSizeX = census_size;
@@ -237,6 +284,19 @@ void jrsgm::enableOcclusionDetection(bool enable)
   createMatcher();
 }
 
+void jrsgm::enableOccInterpol(bool enable)
+{
+  /* Toggle occlusion interpolation */
+  for (auto &pyramid : params.oPyramidParams)
+  {
+    pyramid.bOccInterpol = enable;
+  }
+
+  params.oFinalSubPixelParameters.bOccInterpol = enable;
+
+  createMatcher();
+}
+
 void jrsgm::createMatcher()
 {
   if (matcher_handle != nullptr)
@@ -245,11 +305,21 @@ void jrsgm::createMatcher()
   }
   try
   {
-    matcher_handle = JR::Phobos::CreateMatchStereoHandle(params);
+    checkMemoryValid(image_size.width, image_size.height);
+    if (isMemoryValid)
+    {
+      std::cout << "Re-creating matcher with new paramters..." << std::endl;
+      matcher_handle = JR::Phobos::CreateMatchStereoHandle(params);
+      std::cout << "Re-created matcher with new paramters." << std::endl;
+    }
+    else
+    {
+      std::cerr << "NOT ENOUGH GPU MEMORY AVAILABLE" << std::endl;
+    }
   }
-  catch (const std::exception &ex)
+  catch (...)
   {
     std::cerr << "Failed to create I3DR matcher with chosen parameters" << std::endl;
-    std::cerr << ex.what() << std::endl;
+    //std::cerr << ex.what() << std::endl;
   }
 }

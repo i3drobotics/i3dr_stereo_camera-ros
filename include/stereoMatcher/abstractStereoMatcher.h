@@ -13,7 +13,7 @@
 class AbstractStereoMatcher
 {
 public:
-  explicit AbstractStereoMatcher(std::string &param_file);
+  explicit AbstractStereoMatcher(std::string &param_file, cv::Size _image_size);
   ~AbstractStereoMatcher(void){};
 
   //!  Set images for matching
@@ -48,10 +48,10 @@ public:
   virtual void setOcclusionDetection(bool enable) = 0;
 
   //! Perform a match with the left image as the reference. This is normally what you want.
-  virtual void forwardMatch() = 0;
+  virtual int forwardMatch() = 0;
 
   //! Perform a match with the right image as the reference.
-  virtual void backwardMatch() = 0;
+  virtual int backwardMatch() = 0;
 
   //! Setup the matcher.
   virtual void init(void) = 0;
@@ -70,7 +70,7 @@ public:
   //!  Get a pointer to the right image
   cv::Mat *getRighttImage(void) { return right; }
 
-  virtual void match();
+  virtual int match();
 
 protected:
   cv::Mat *left;

@@ -7,8 +7,8 @@
 
 class jrsgm {
     public:
-        jrsgm(std::string &sConfigFile){
-            init(sConfigFile);
+        jrsgm(std::string &sConfigFile,cv::Size image_size){
+            init(sConfigFile,image_size);
         }
     
         ~jrsgm(void){
@@ -29,7 +29,10 @@ class jrsgm {
         void setWindowSize(int census_size);
         void enableInterpolation(bool enable);
         void enableOcclusionDetection(bool enable);
+        void enableOccInterpol(bool enable);
         void enableTextureDSI(bool enable);
+
+        void setImages(cv::Mat left_image, cv::Mat right_image);
 
         float getP1(void){ return params.oPyramidParams[0].oSGMParams.fP1_E_W; }
         float getP2(void){ return params.oPyramidParams[0].oSGMParams.fP2_E_W; }
@@ -40,8 +43,8 @@ class jrsgm {
         bool getSubpixel(void){return params.oFinalSubPixelParameters.bCompute; }
         int getDisparityShift(void){return params.fTopPredictionShift * pow(2, params.nNumberOfPyramids-1) ; }
 
-        void compute(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp);
-        void backwardMatch(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp);
+        int compute(cv::Mat &disp);
+        int backwardMatch(cv::Mat &disp);
 
     private:
         JR::Phobos::TSTEREOHANDLE matcher_handle = nullptr;
@@ -49,12 +52,18 @@ class jrsgm {
         int min_disparity, disparity_range;
         cudaMem cudaMemory;
 
-        void init(std::string &sConfigFile);
+        void init(std::string &sConfigFile, cv::Size image_size);
+        cv::Size image_size;
+        cv::Mat image_right, image_left;
+
+        bool isMemoryValid;
+
         int round_up_to_32(int val);
         int checkMemoryDSI(int image_width, int image_height);
         int checkMemoryCensus(int image_width, int image_height);
-        int checkMemoryAvailable();
-        bool isMemoryValid(int image_width, int image_height);
+        int checkMemoryExtra(int image_width, int image_height);
+        size_t checkMemoryAvailable();
+        bool checkMemoryValid(int image_width, int image_height);
 };
 
 #endif // JRSGM_H
