@@ -2,6 +2,7 @@
 #define JRSGM_H
 
 #include <PhobosIntegration/PhobosIntegration.hpp>
+#include <stereoMatcher/cudaMem.h>
 #include <iostream>
 
 class jrsgm {
@@ -46,11 +47,14 @@ class jrsgm {
         JR::Phobos::TSTEREOHANDLE matcher_handle = nullptr;
         JR::Phobos::SMatchingParametersInput params;
         int min_disparity, disparity_range;
+        cudaMem cudaMemory;
 
         void init(std::string &sConfigFile);
         int round_up_to_32(int val);
         int checkMemoryDSI(int image_width, int image_height);
         int checkMemoryCensus(int image_width, int image_height);
+        int checkMemoryAvailable();
+        bool isMemoryValid(int image_width, int image_height);
 };
 
 #endif // JRSGM_H

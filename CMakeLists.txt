@@ -55,27 +55,38 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
-link_directories(${PCL_LIBRARY_DIRS})
+link_directories(
+	${PCL_LIBRARY_DIRS}
+	${CMAKE_CURRENT_SOURCE_DIR}/bin
+	)
 add_definitions(${PCL_DEFINITIONS})
 
 if (PHOBOS_FOUND)
 	add_executable(
 		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/jrsgm.cpp src/stereoMatcher/matcherJRSGM.cpp 
 	)
+	target_link_libraries(
+		generate_disparity
+		${Phobos_LIBRARIES}
+		${catkin_LIBRARIES}
+		${OpenCV_LIBRARIES}
+		${PCL_LIBRARIES}
+		cudaMem
+	)
 else (PHOBOS_FOUND)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
 	add_executable(
 		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp
 	)
+	target_link_libraries(
+		generate_disparity
+		${Phobos_LIBRARIES}
+		${catkin_LIBRARIES}
+		${OpenCV_LIBRARIES}
+		${PCL_LIBRARIES}
+	)
 endif()
 
-target_link_libraries(
-	generate_disparity
-	${Phobos_LIBRARIES}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	${PCL_LIBRARIES}
-)
 
 add_executable(
 	rectify src/rectify.cpp

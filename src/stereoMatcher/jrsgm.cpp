@@ -13,11 +13,21 @@ int jrsgm::getErrorDisparity(void)
   return -10000;
 }
 
-int jrsgm::round_up_to_32(int val){
+int jrsgm::round_up_to_32(int val)
+{
   return round(val / 32) * 32;
 }
 
-int jrsgm::checkMemoryCensus(int image_width, int image_height){
+int jrsgm::checkMemoryAvailable()
+{
+  //re-calculate current CUDA GPU memory
+  cudaMemory.calcMem();
+  //get CUDA GPU memory free (bytes)
+  return (cudaMemory.getMemFree());
+}
+
+int jrsgm::checkMemoryCensus(int image_width, int image_height)
+{
   int num_of_gpus = params.oGPUs.size();
   int window_size_x = params.oPyramidParams[0].oMetricParams.nWindowSizeX;
   int window_size_y = params.oPyramidParams[0].oMetricParams.nWindowSizeY;
@@ -27,50 +37,73 @@ int jrsgm::checkMemoryCensus(int image_width, int image_height){
 
   bool enMeanCensus = true;
   int NumberOfNeededCensusBytes;
-  if (enMeanCensus){
-    NumberOfNeededCensusBytes = round_up_to_32(window_size_x*window_size_y * (1+have_no_data))/4 * (num_of_slanted_window_scales + num_of_slanted_window_shifts*2);
-  } else {
-    NumberOfNeededCensusBytes = round_up_to_32((window_size_x*window_size_y -1)* (1+have_no_data))/4 * (num_of_slanted_window_scales + num_of_slanted_window_shifts*2);
+  if (enMeanCensus)
+  {
+    NumberOfNeededCensusBytes = round_up_to_32(window_size_x * window_size_y * (1 + have_no_data)) / 4 * (num_of_slanted_window_scales + num_of_slanted_window_shifts * 2);
   }
-  int MemoryCensus_PerGPU = 2*image_width*image_height*NumberOfNeededCensusBytes / num_of_gpus;
+  else
+  {
+    NumberOfNeededCensusBytes = round_up_to_32((window_size_x * window_size_y - 1) * (1 + have_no_data)) / 4 * (num_of_slanted_window_scales + num_of_slanted_window_shifts * 2);
+  }
+  int MemoryCensus_PerGPU = 2 * image_width * image_height * NumberOfNeededCensusBytes / num_of_gpus;
   return MemoryCensus_PerGPU;
 }
 
-int jrsgm::checkMemoryDSI(int image_width, int image_height){
+int jrsgm::checkMemoryDSI(int image_width, int image_height)
+{
   int num_of_disparities = params.oPyramidParams[0].nMaximumNumberOfDisparities;
   bool enTextureDSI = params.oPyramidParams[0].oSGMParams.bUseDSITexture;
   int texture_dsi;
-  if (enTextureDSI){
+  if (enTextureDSI)
+  {
     texture_dsi = 2;
-  } else {
+  }
+  else
+  {
     texture_dsi = 1;
   }
-  int MemoryDSI_PerGPU = 2*image_width*image_height*num_of_disparities;
+  int MemoryDSI_PerGPU = 2 * image_width * image_height * num_of_disparities;
   return MemoryDSI_PerGPU;
+}
+
+bool jrsgm::isMemoryValid(int image_width, int image_height)
+{
+  int memoryDSI = checkMemoryDSI(image_width, image_height);
+  int memoryCensus = checkMemoryCensus(image_width, image_height);
+  int memoryAvaiable = checkMemoryAvailable();
+  std::cout << "GPU MEMORY DSI: " << memoryDSI << std::endl;
+  std::cout << "GPU MEMORY CENSUS: " << memoryCensus << std::endl;
+  std::cout << "GPU MEMORY AVAILABLE: " << memoryAvaiable << std::endl;
+  if ((memoryDSI + memoryCensus) < memoryAvaiable){
+    return true;
+  } else {
+    return false;
+  }
 }
 
 //compute disparity
 void jrsgm::compute(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp)
 {
-  int memoryDSI = checkMemoryDSI(left_image.size().width,left_image.size().height);
-  int memoryCensus = checkMemoryCensus(left_image.size().width,left_image.size().height);
-  std::cout << "GPU MEMORY DSI: " << memoryDSI << std::endl;
-  std::cout << "GPU MEMORY CENSUS: " << memoryCensus << std::endl;
-  std::string sgm_log = "./sgm_log.txt";
-  try
+  if (isMemoryValid(left_image.size().width, left_image.size().height))
   {
-    JR::Phobos::MatchStereo(matcher_handle,
-                            left_image,
-                            right_image,
-                            cv::Mat(),
-                            cv::Mat(),
-                            disp,
-                            sgm_log,
-                            JR::Phobos::e_logError);
-  }
-  catch (const std::exception &ex)
-  {
-    std::cerr << ex.what() << std::endl;
+    std::string sgm_log = "./sgm_log.txt";
+    try
+    {
+      JR::Phobos::MatchStereo(matcher_handle,
+                              left_image,
+                              right_image,
+                              cv::Mat(),
+                              cv::Mat(),
+                              disp,
+                              sgm_log,
+                              JR::Phobos::e_logError);
+    }
+    catch (const std::exception &ex)
+    {
+      std::cerr << ex.what() << std::endl;
+    }
+  } else {
+    std::cerr << "NOT ENOUGH GPU MEMORY AVAILABLE" << std::endl;
   }
 }
 
@@ -125,7 +158,8 @@ void jrsgm::setP2(float P2)
 
 void jrsgm::setWindowSize(int census_size)
 {
-  if (census_size > 13){
+  if (census_size > 13)
+  {
     std::cout << "census size " << census_size << " is too large. Will use maximum 13" << std::endl;
     census_size = 13;
   }
@@ -170,7 +204,8 @@ void jrsgm::setDisparityRange(int n)
   createMatcher();
 }
 
-void jrsgm::enableTextureDSI(bool enable){
+void jrsgm::enableTextureDSI(bool enable)
+{
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oSGMParams.bUseDSITexture = enable;
@@ -211,7 +246,8 @@ void jrsgm::createMatcher()
   try
   {
     matcher_handle = JR::Phobos::CreateMatchStereoHandle(params);
-  } catch  (const std::exception &ex)
+  }
+  catch (const std::exception &ex)
   {
     std::cerr << "Failed to create I3DR matcher with chosen parameters" << std::endl;
     std::cerr << ex.what() << std::endl;
