@@ -23,7 +23,7 @@
     <arg name="p2" default="400"/>
     <arg name="interp" default="false"/>
 
-    <arg name="depth_max" default="999" />
+    <arg name="depth_max" default="3" />
 
     <arg if="$(arg split_laser)" name="left_image_topic" default="left/image_raw_with_laser"/>
     <arg if="$(arg split_laser)" name="right_image_topic" default="right/image_raw_with_laser"/>

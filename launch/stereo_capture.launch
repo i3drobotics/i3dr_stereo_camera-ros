@@ -8,6 +8,9 @@
     <arg name="camera_left_serial" default="31710277"/>
 
     <arg name="camera_namespace" default="stereo"/>
+
+    <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
+
     <arg name="frame_width" default="2448"/>
     <arg name="frame_height" default="2048"/>
     <arg name="brightness" default="0"/>
@@ -28,8 +31,8 @@
     <group ns="$(arg camera_namespace)">
 
         <!-- Start the pylon control node for each camera -->
-        <node if="$(eval cameratype == 1)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
-            <param name="camera_frame" value="$(arg camera_namespace)_depth_optical_frame"/>
+        <node if="$(eval cameratype == 1)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
+            <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="device_user_id" value="$(arg camera_left_serial)"/>
             <param name="camera_info_url" value="$(arg camera_info_left)"/>
             <param name="frame_rate" value="$(arg fps)"/>
@@ -47,8 +50,8 @@
             <param name="binning_y" value="1"/>
         </node>
 
-        <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" output="screen">
-            <param name="camera_frame" value="$(arg camera_namespace)_depth_optical_frame"/>
+        <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
+            <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="device_user_id" value="$(arg camera_right_serial)"/>
             <param name="camera_info_url" value="$(arg camera_info_right)"/>
             <param name="frame_rate" value="$(arg fps)"/>
@@ -79,7 +82,7 @@
         <node if="$(eval cameratype == 0)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
             <param name="camera_name" value="left"/>
             <param name="camera_info" value="$(arg camera_info_left)"/>
-            <param name="camera_frame" value="/$(arg camera_namespace)_depth_optical_frame"/>
+            <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="Serial" value="$(arg camera_left_serial)"/>
             <param name="Width" value="$(arg frame_width)"/>
             <param name="Height" value="$(arg frame_height)"/>
@@ -96,7 +99,7 @@
         <node if="$(eval cameratype == 0)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
             <param name="camera_name" value="right"/>
             <param name="camera_info" value="$(arg camera_info_right)"/>
-            <param name="camera_frame" value="/$(arg camera_namespace)_depth_optical_frame"/>
+            <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="Serial" value="$(arg camera_right_serial)"/>
             <param name="Width" value="$(arg frame_width)"/>
             <param name="Height" value="$(arg frame_height)"/>
