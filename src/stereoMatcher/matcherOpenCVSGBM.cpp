@@ -16,9 +16,7 @@ void MatcherOpenCVSGBM::setupDefaultMatcher(void)
 
 int MatcherOpenCVSGBM::forwardMatch()
 {
-  matcher->setMinDisparity(min_disparity);
-
-  try
+ try
   {
     matcher->compute(*left, *right, disparity_lr);
     if (interpolate)
@@ -33,7 +31,7 @@ int MatcherOpenCVSGBM::forwardMatch()
       wls_filter->filter(disparity_lr, *left, disparity_filter, disparity_rl);
       disparity_rl.copyTo(disparity_lr);
     }
-    //disparity_lr.convertTo(disparity_lr, CV_32F);
+    disparity_lr.convertTo(disparity_lr, CV_32FC1);
     return 0;
   }
   catch (...)

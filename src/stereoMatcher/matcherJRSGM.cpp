@@ -27,7 +27,7 @@ int MatcherJRSGM::forwardMatch()
     int exitCode = JR_matcher->compute(disparity_lr);
     if (exitCode == 0)
     {
-        disparity_lr.convertTo(disparity_lr, CV_32F, -16);
+        disparity_lr.convertTo(disparity_lr, CV_32FC1, -16);
     }
     return exitCode;
 }

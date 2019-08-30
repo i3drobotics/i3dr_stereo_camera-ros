@@ -17,6 +17,10 @@
     <arg name="stereo_cal" default="true"/>
     <arg name="single_cal" default="false"/>
 
+    <!-- TODO calibration to chosen yaml file -->
+    <arg name="camera_info_right" default="file:///home/i3dr/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
+    <arg name="camera_info_left" default="file:///home/i3dr/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml" />
+
     <!-- STEREO CALIBRATION -->
     <!-- turn on/off approximate sync for stereo cameras not fully in unison -->
     <arg if="$(arg approximate_sync)" name="approx_val" value="--approximate 0.1" />

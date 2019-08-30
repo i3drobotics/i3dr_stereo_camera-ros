@@ -150,7 +150,7 @@ bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
       ROS_ERROR("%s", res.res.c_str());
       return false;
     }
-    pcl::io::savePLYFileBinary(req.folderpath + "/" + std::to_string(save_index) + "_points.ply", *_stereo_point_cloud_RGB);
+    pcl::io::savePLYFileASCII(req.folderpath + "/" + std::to_string(save_index) + "_points.ply", *_stereo_point_cloud_RGB);
   }
 
   res.res = "Saved stereo data: " + req.folderpath;
@@ -215,11 +215,11 @@ PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::P
       point.y = reconst_ptr[3 * j + 1];
       point.z = reconst_ptr[3 * j + 2];
 
-      if (abs(point.x) > 10)
+      if (abs(point.x) > 50)
         continue;
-      if (abs(point.y) > 10)
+      if (abs(point.y) > 50)
         continue;
-      if (abs(point.z) > 10)
+      if (abs(point.z) > 50 || point.z < 0)
         continue;
       col = rgb_ptr[j];
 
@@ -337,13 +337,16 @@ Mat stereo_match(Mat left_image, Mat right_image)
   if (!isFirstImagesRecevied){
     init_matcher(image_size);
     isFirstImagesRecevied = true;
-  } else {
   }
+
+  //std::cout << "Matching..." << std::endl;
+
   matcher->setImages(&left_image, &right_image);
 
   int exitCode = matcher->match();
   if (exitCode == 0){
     matcher->getDisparity(disp);
+    //std::cout << "Match complete." << std::endl;
   } else {
     ROS_ERROR("Failed to compute stereo match");
     ROS_ERROR("Please check parameters are valid.");
@@ -389,6 +392,7 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
   double cxR = Kr.at<double>(0, 2);
   double cxL = Kl.at<double>(0, 2);
   double f = Kl.at<double>(0, 0);
+
   double T = Pr.at<double>(0, 3) / Kr.at<double>(0, 0); //baseline = P14 / f
 
   disparity.convertTo(dmat, dmat.type(), inv_dpp, -(cxL - cxR));
@@ -450,6 +454,7 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
 
   cv::Mat disparity16_ = stereo_match(left_rect, right_rect);
   if (disparity16_.empty()){
+    ROS_ERROR("Match unsuccessful. Disparity map is empty!");
     return -1;
   }
 
@@ -470,6 +475,8 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
   // Stereo parameters
   disparity.f = model.right().fx();
   disparity.T = model.baseline();
+
+  //ROS_INFO("T: %f",model.baseline());
 
   /// @todo Window of (potentially) valid disparities
 
@@ -604,6 +611,8 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
 
 void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
 {
+  //ROS_INFO("Stereo image pair received with frame id: %s",msg_left_camera_info->header.frame_id.c_str());
+
   image_geometry::StereoCameraModel model_;
   // Update the camera model
   model_.fromCameraInfo(msg_left_camera_info, msg_right_camera_info);
@@ -623,6 +632,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   disp_msg->header = msg_left_camera_info->header;
   disp_msg->image.header = msg_left_camera_info->header;
   disp_msg->header.stamp = msg_left_camera_info->header.stamp;
+  //ROS_INFO("Stamp: %f", disp_msg->header.stamp.toSec());
   disp_msg->header.frame_id = _frame_id;
 
   disp_msg->valid_window.x_offset = 0;
@@ -633,22 +643,31 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   // Perform block matching to find the disparities
   int exitCode = processDisparity(left_rect, right_rect, model_, *disp_msg);
   if (exitCode != 0) {
+    ROS_ERROR("Failed to process disparity");
     return;
   }
 
   // Adjust for any x-offset between the principal points: d' = d - (cx_l - cx_r)
   double cx_l = model_.left().cx();
   double cx_r = model_.right().cx();
+  //ROS_INFO("CX_l: %f, CX_r: %f",cx_l,cx_r);
+  
   if (cx_l != cx_r)
   {
+    //ROS_INFO("Adjusting x offset of pricipal points");
     cv::Mat_<float> disp_image(disp_msg->image.height, disp_msg->image.width,
                                reinterpret_cast<float *>(&disp_msg->image.data[0]),
                                disp_msg->image.step);
     cv::subtract(disp_image, cv::Scalar(cx_l - cx_r), disp_image);
   }
+  
+  //ROS_INFO("Publishing disparity message...");
   _disparity_pub.publish(disp_msg);
+  //ROS_INFO("Published disparity message.");
 
+  //ROS_INFO("Publishing point cloud message...");
   pointCloudCb(disp_msg, msg_left_image, msg_right_image, msg_left_camera_info, msg_right_camera_info);
+  //ROS_INFO("Published point cloud message. Point cloud size: %lu",_stereo_point_cloud_RGB->size());
 
   _stereo_left = input_image_left->image;
   _stereo_right = input_image_right->image;
@@ -821,6 +840,8 @@ int main(int argc, char **argv)
     _interp = interp;
     ROS_INFO("interp: %s", interp ? "true" : "false");
   }
+
+  //TODO add message if camera info file not found
 
   std::string ns = ros::this_node::getNamespace();
 

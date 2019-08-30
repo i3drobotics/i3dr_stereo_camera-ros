@@ -306,6 +306,7 @@ void jrsgm::createMatcher()
   try
   {
     checkMemoryValid(image_size.width, image_size.height);
+    isMemoryValid = true;
     if (isMemoryValid)
     {
       std::cout << "Re-creating matcher with new paramters..." << std::endl;
