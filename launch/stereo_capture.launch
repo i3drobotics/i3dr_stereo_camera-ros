@@ -21,7 +21,7 @@
     <arg name="fps" default="5"/>
     <arg name="trigger" default="true"/>
     <!-- 0=TIS, 1=Basler -->
-    <arg name="cameratype" default="0"/>
+    <arg name="camera_type" default="0"/>
     <arg name="split_laser" default="false"/>
 
     <arg name="camera_info_right" default="file:///home/wood/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
@@ -31,7 +31,7 @@
     <group ns="$(arg camera_namespace)">
 
         <!-- Start the pylon control node for each camera -->
-        <node if="$(eval cameratype == 1)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
+        <node if="$(eval camera_type == 1)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
             <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="device_user_id" value="$(arg camera_left_serial)"/>
             <param name="camera_info_url" value="$(arg camera_info_left)"/>
@@ -50,7 +50,7 @@
             <param name="binning_y" value="1"/>
         </node>
 
-        <node if="$(eval cameratype == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
+        <node if="$(eval camera_type == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
             <param name="camera_frame" value="$(arg frame_id)"/>
             <param name="device_user_id" value="$(arg camera_right_serial)"/>
             <param name="camera_info_url" value="$(arg camera_info_right)"/>
@@ -79,7 +79,7 @@
         <!-- set camera properties using services from this node
              rosservice call /phobos/[left or right]/tiscam_[serial]_set_exposure_auto -->
 
-        <node if="$(eval cameratype == 0)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
+        <node if="$(eval camera_type == 0)" ns="left" name="i3dr_stereo_camera_left_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
             <param name="camera_name" value="left"/>
             <param name="camera_info" value="$(arg camera_info_left)"/>
             <param name="camera_frame" value="$(arg frame_id)"/>
@@ -96,7 +96,7 @@
             <param name="split_laser" value="$(arg split_laser)"/>
         </node>
 
-        <node if="$(eval cameratype == 0)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
+        <node if="$(eval camera_type == 0)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_ctrl.py" output="screen">
             <param name="camera_name" value="right"/>
             <param name="camera_info" value="$(arg camera_info_right)"/>
             <param name="camera_frame" value="$(arg frame_id)"/>
@@ -113,7 +113,7 @@
             <param name="split_laser" value="$(arg split_laser)"/>
         </node>
 
-        <node if="$(eval cameratype == 0)" name="i3dr_stereo_camera_trigger_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_trigger.py" output="screen"/>
+        <node if="$(eval camera_type == 0)" name="i3dr_stereo_camera_trigger_ctrl" pkg="i3dr_stereo_camera" type="tiscamera_trigger.py" output="screen"/>
 
     </group>
 

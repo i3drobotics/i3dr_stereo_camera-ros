@@ -91,7 +91,7 @@ bool _interp = false;
 int _preFilterCap = 31;
 int _preFilterSize = 9;
 
-std::string _jr_config_file = "/home/i3dr/i3dr_tools_ros/i3dr_tools_ros_WS/src/i3dr_cameras/i3dr_stereo_camera/ini/JR_matchingparam_without_interpolation.cfg";
+std::string _jr_config_file = "";
 
 cv::Mat _Kl, _Dl, _Rl, _Pl;
 cv::Mat _Kr, _Dr, _Rr, _Pr;
