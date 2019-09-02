@@ -24,8 +24,8 @@
     <arg name="camera_type" default="0"/>
     <arg name="split_laser" default="false"/>
 
-    <arg name="camera_info_right" default="file:///home/wood/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
-    <arg name="camera_info_left" default="file:///home/wood/.ros/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml" />
+    <arg name="camera_info_right" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
+    <arg name="camera_info_left" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml" />
 
     <!-- STEREO <MATCHER> -->
     <group ns="$(arg camera_namespace)">

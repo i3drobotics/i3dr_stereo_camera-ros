@@ -10,22 +10,50 @@
     <!-- Matcher Parameters -->
     <!-- see link below for details on matcher parameters -->
     <!-- http://wiki.ros.org/stereo_image_proc/Tutorials/ChoosingGoodStereoParameters -->
-    <!-- algorithm 0: OpenCV block -->
+    <!-- algorithm 0: OpenCV Block -->
     <!-- algorithm 1: OpenCV SGBM -->
     <!-- algorithm 2: JR SGM -->
     <arg name="stereo_algorithm" default="0" />
-    <arg name="min_disparity" default="128" />
-    <arg name="disparity_range" default="256" />
-    <arg name="correlation_window_size" default="19" />
-    <arg name="uniqueness_ratio" default="2" />
-    <arg name="texture_threshold" default="10" />
-    <arg name="speckle_range" default="4" />
-    <arg name="speckle_size" default="1000" />
-    <arg name="prefilter_size" default="147" />
-    <arg name="prefilter_cap" default="7" />
-    <arg name="p1" default="200"/>
-    <arg name="p2" default="400"/>
-    <arg name="interp" default="false"/>
+    <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="-133" />
+    <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="256" />
+    <arg if="$(eval stereo_algorithm == 0)" name="correlation_window_size" default="21" />
+    <arg if="$(eval stereo_algorithm == 0)" name="uniqueness_ratio" default="2" />
+    <arg if="$(eval stereo_algorithm == 0)" name="speckle_range" default="4" />
+    <arg if="$(eval stereo_algorithm == 0)" name="speckle_size" default="1000" />
+    <arg if="$(eval stereo_algorithm == 0)" name="prefilter_size" default="147" />
+    <arg if="$(eval stereo_algorithm == 0)" name="prefilter_cap" default="7" />
+    <arg if="$(eval stereo_algorithm == 0)" name="p1" default="200"/>
+    <arg if="$(eval stereo_algorithm == 0)" name="p2" default="400"/>
+    <arg if="$(eval stereo_algorithm == 0)" name="interp" default="false"/>
+    <!-- Not used in OpenCV Block -->
+    <arg if="$(eval stereo_algorithm == 0)" name="texture_threshold" default="10" />
+
+    <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="-133" />
+    <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="256" />
+    <arg if="$(eval stereo_algorithm == 1)" name="correlation_window_size" default="21" />
+    <arg if="$(eval stereo_algorithm == 1)" name="uniqueness_ratio" default="2" />
+    <arg if="$(eval stereo_algorithm == 1)" name="texture_threshold" default="10" />
+    <arg if="$(eval stereo_algorithm == 1)" name="speckle_range" default="4" />
+    <arg if="$(eval stereo_algorithm == 1)" name="speckle_size" default="1000" />
+    <arg if="$(eval stereo_algorithm == 1)" name="prefilter_size" default="147" />
+    <arg if="$(eval stereo_algorithm == 1)" name="prefilter_cap" default="7" />
+    <arg if="$(eval stereo_algorithm == 1)" name="p1" default="200"/>
+    <arg if="$(eval stereo_algorithm == 1)" name="p2" default="400"/>
+    <arg if="$(eval stereo_algorithm == 1)" name="interp" default="false"/>
+
+    <arg if="$(eval stereo_algorithm == 2)" name="min_disparity" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="disparity_range" default="256" />
+    <arg if="$(eval stereo_algorithm == 2)" name="correlation_window_size" default="9" />
+    <arg if="$(eval stereo_algorithm == 2)" name="p1" default="200"/>
+    <arg if="$(eval stereo_algorithm == 2)" name="p2" default="400"/>
+    <arg if="$(eval stereo_algorithm == 2)" name="interp" default="false"/>
+    <!-- Not used in JR SGM -->
+    <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="texture_threshold" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="speckle_range" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="speckle_size" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="prefilter_size" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="0" />
 
     <arg name="depth_max" default="3" />
 
@@ -52,7 +80,7 @@
 
     <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
 
-    <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/JR_matchingparam_without_interpolation.cfg"/>
+    <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/default.param"/>
 
     <arg name="use_i3dr_matcher" default="false"/>
 
@@ -122,7 +150,7 @@
 
     <group if="$(arg split_laser)">
         <!-- Rectify no laser images that aren't used to generate 3D (so rectifiy isn't created) -->
-        <node pkg="i3dr_stereo_camera" type="rectify" ns="$(arg camera_namespace)" name="(anon rectify_non_laser)" output="screen">
+        <node pkg="i3dr_stereo_camera" type="rectify" ns="$(arg camera_namespace)" name="$(anon rectify_non_laser)" output="screen">
         <remap from="left/image_raw" to="left/image_raw_no_laser"/>
         <remap from="right/image_raw" to="right/image_raw_no_laser"/>
         <remap from="left/image_rect" to="left/image_rect_no_laser"/>

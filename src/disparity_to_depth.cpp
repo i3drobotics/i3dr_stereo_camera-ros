@@ -75,12 +75,8 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 				{
 					// baseline * focal / disparity
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
-					if (depth < _depth_max) //ignore depth values large than user defined maximum (m)
+					if (depth < _depth_max && depth > 0) //ignore depth values large than user defined maximum (m)
 					{
-						if (disparity_value > 0){
-							//ROS_INFO("Min_disparity: %f, Max_disp: %f, Disp: %f, Depth: %f",disparityMsg->min_disparity,disparityMsg->max_disparity,disparity_value,depth);
-							//ROS_INFO("T: %f, f: %f",disparityMsg->T,disparityMsg->f);
-						}
 						if (publish32f)
 						{
 							depth32f.at<float>(i, j) = depth;

@@ -621,11 +621,15 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   input_image_left = cv_bridge::toCvCopy(msg_left_image, "mono8");
   input_image_right = cv_bridge::toCvCopy(msg_right_image, "mono8");
 
+  //ROS_INFO("Recitifying images...");
   cv::Mat_<uint8_t> left_rect = rectify(input_image_left->image, msg_left_camera_info);
   cv::Mat_<uint8_t> right_rect = rectify(input_image_right->image, msg_right_camera_info);
+  //ROS_INFO("Rectified images.");
 
+  //ROS_INFO("Publishing recitifyed images...");
   publish_image(_rect_l_pub, msg_left_image, left_rect);
   publish_image(_rect_r_pub, msg_right_image, right_rect);
+  //ROS_INFO("Published recitifyed images.");
 
   // Allocate new disparity image message
   stereo_msgs::DisparityImagePtr disp_msg = boost::make_shared<stereo_msgs::DisparityImage>();
@@ -641,6 +645,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   disp_msg->valid_window.height = 0;
 
   // Perform block matching to find the disparities
+  //ROS_INFO("Stereo Matching...");
   int exitCode = processDisparity(left_rect, right_rect, model_, *disp_msg);
   if (exitCode != 0) {
     ROS_ERROR("Failed to process disparity");
@@ -660,6 +665,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
                                disp_msg->image.step);
     cv::subtract(disp_image, cv::Scalar(cx_l - cx_r), disp_image);
   }
+  //ROS_INFO("Stereo Matching complete.");
   
   //ROS_INFO("Publishing disparity message...");
   _disparity_pub.publish(disp_msg);
@@ -759,6 +765,8 @@ int main(int argc, char **argv)
   bool interp;
   std::string frame_id, left_camera_calibration_url, right_camera_calibration_url, jr_config_file;
 
+  std::string ns = ros::this_node::getNamespace();
+
   //Get parameters
   if (p_nh.getParam("stereo_algorithm", stereo_algorithm))
   {
@@ -829,6 +837,8 @@ int main(int argc, char **argv)
   {
     _frame_id = frame_id;
     ROS_INFO("frame_id: %s", _frame_id.c_str());
+  } else {
+    _frame_id = ns+"_depth_optical_frame";
   }
   if (p_nh.getParam("jr_config_file", jr_config_file))
   {
@@ -840,10 +850,6 @@ int main(int argc, char **argv)
     _interp = interp;
     ROS_INFO("interp: %s", interp ? "true" : "false");
   }
-
-  //TODO add message if camera info file not found
-
-  std::string ns = ros::this_node::getNamespace();
 
   // Dynamic parameters
   dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_DisparityConfig> server;
