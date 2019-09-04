@@ -7,9 +7,14 @@
     <!-- number of columns in checkerboard -->
     <arg name="grid_cols" default="6" />
     <!-- size of squares in checkerboard -->
-    <arg name="grid_size" default="0.036" />
+    <arg name="grid_size" default="0.039" /> <!-- 0.036 -->
     <!-- enable/disable approximate sync for stereo cameras that do not trigger in unison -->
     <arg name="approximate_sync" default="true" />
+
+    <arg name="multi_board" default="false" />
+    <arg name="grid_rows2" default="9" />
+    <arg name="grid_cols2" default="6" />
+    <arg name="grid_size2" default="0.11" />
 
     <arg name="camera_namespace" default="stereo" />
     <arg name="split_laser" default="false"/>
@@ -25,10 +30,10 @@
     <!-- turn on/off approximate sync for stereo cameras not fully in unison -->
     <arg if="$(arg approximate_sync)" name="approx_val" value="--approximate 0.1" />
     <arg unless="$(arg approximate_sync)" name="approx_val" value="" />
-   
-    <group if="$(arg stereo_cal)">   
+
+    <group if="$(arg multi_board)">
         <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal" output="screen"
-            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size) --no-service-check">
+            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size) --size $(arg grid_rows2)x$(arg grid_cols2) --square $(arg grid_size2) --no-service-check">
             <remap if="$(arg split_laser)" from="right" to="/$(arg camera_namespace)/right/image_raw_no_laser"/>
             <remap if="$(arg split_laser)" from="left" to="/$(arg camera_namespace)/left/image_raw_no_laser"/>
             <remap unless="$(arg split_laser)" from="right" to="/$(arg camera_namespace)/right/image_raw"/>
@@ -37,19 +42,33 @@
             <remap from="left_camera" to="/$(arg camera_namespace)/left"/>
         </node>
     </group>
-    <group if="$(arg single_cal)">   
-        <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_left" output="screen"
-            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
-            <remap unless="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/left/image_raw"/>
-            <remap if="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/rileftght/image_raw_no_laser"/>
-            <remap from="camera" to="/$(arg camera_namespace)/left"/>
-        </node>
-        <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_right" output="screen"
-            args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
-            <remap unless="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/right/image_raw"/>
-            <remap if="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/right/image_raw_no_laser"/>
-            <remap from="camera" to="/$(arg camera_namespace)/right"/>
-        </node>
+
+    <group unless="$(arg multi_board)">
+        <group if="$(arg stereo_cal)">   
+            <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal" output="screen"
+                args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size) --no-service-check">
+                <remap if="$(arg split_laser)" from="right" to="/$(arg camera_namespace)/right/image_raw_no_laser"/>
+                <remap if="$(arg split_laser)" from="left" to="/$(arg camera_namespace)/left/image_raw_no_laser"/>
+                <remap unless="$(arg split_laser)" from="right" to="/$(arg camera_namespace)/right/image_raw"/>
+                <remap unless="$(arg split_laser)" from="left" to="/$(arg camera_namespace)/left/image_raw"/>
+                <remap from="right_camera" to="/$(arg camera_namespace)/right"/>
+                <remap from="left_camera" to="/$(arg camera_namespace)/left"/>
+            </node>
+        </group>
+        <group if="$(arg single_cal)">   
+            <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_left" output="screen"
+                args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+                <remap unless="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/left/image_raw"/>
+                <remap if="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/rileftght/image_raw_no_laser"/>
+                <remap from="camera" to="/$(arg camera_namespace)/left"/>
+            </node>
+            <node pkg="camera_calibration" type="cameracalibrator.py" name="stereo_cal_right" output="screen"
+                args="$(arg approx_val) --size $(arg grid_rows)x$(arg grid_cols) --square $(arg grid_size)">
+                <remap unless="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/right/image_raw"/>
+                <remap if="$(arg split_laser)" from="image" to="/$(arg camera_namespace)/right/image_raw_no_laser"/>
+                <remap from="camera" to="/$(arg camera_namespace)/right"/>
+            </node>
+        </group>
     </group>
 
     <!-- See below for more information on the stereo calibration process -->
