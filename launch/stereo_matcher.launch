@@ -21,8 +21,8 @@
     <!-- algorithm 1: OpenCV SGBM -->
     <!-- algorithm 2: JR SGM -->
     <arg name="stereo_algorithm" default="0" />
-    <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="-133" />
-    <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="256" />
+    <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="133" />
+    <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="352" />
     <arg if="$(eval stereo_algorithm == 0)" name="correlation_window_size" default="21" />
     <arg if="$(eval stereo_algorithm == 0)" name="uniqueness_ratio" default="2" />
     <arg if="$(eval stereo_algorithm == 0)" name="speckle_range" default="4" />
@@ -35,8 +35,8 @@
     <!-- Not used in OpenCV Block -->
     <arg if="$(eval stereo_algorithm == 0)" name="texture_threshold" default="10" />
 
-    <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="-133" />
-    <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="256" />
+    <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="133" />
+    <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="352" />
     <arg if="$(eval stereo_algorithm == 1)" name="correlation_window_size" default="21" />
     <arg if="$(eval stereo_algorithm == 1)" name="uniqueness_ratio" default="2" />
     <arg if="$(eval stereo_algorithm == 1)" name="texture_threshold" default="10" />
@@ -49,10 +49,10 @@
     <arg if="$(eval stereo_algorithm == 1)" name="interp" default="false"/>
 
     <arg if="$(eval stereo_algorithm == 2)" name="min_disparity" default="0" />
-    <arg if="$(eval stereo_algorithm == 2)" name="disparity_range" default="256" />
-    <arg if="$(eval stereo_algorithm == 2)" name="correlation_window_size" default="9" />
-    <arg if="$(eval stereo_algorithm == 2)" name="p1" default="200"/>
-    <arg if="$(eval stereo_algorithm == 2)" name="p2" default="400"/>
+    <arg if="$(eval stereo_algorithm == 2)" name="disparity_range" default="0" />
+    <arg if="$(eval stereo_algorithm == 2)" name="correlation_window_size" default="5" />
+    <arg if="$(eval stereo_algorithm == 2)" name="p1" default="20"/>
+    <arg if="$(eval stereo_algorithm == 2)" name="p2" default="40"/>
     <arg if="$(eval stereo_algorithm == 2)" name="interp" default="false"/>
     <!-- Not used in JR SGM -->
     <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="0" />
