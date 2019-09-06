@@ -24,6 +24,8 @@
     <arg name="camera_type" default="0"/>
     <arg name="split_laser" default="false"/>
 
+    <arg name="binning" default="1"/>
+
     <arg name="camera_info_right" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
     <arg name="camera_info_left" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml" />
 
@@ -46,8 +48,8 @@
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="5000"/>
             <param name="enable_split_laser" value="$(arg split_laser)"/>
-            <param name="binning_x" value="1"/>
-            <param name="binning_y" value="1"/>
+            <param name="binning_x" value="$(arg binning)"/>
+            <param name="binning_y" value="$(arg binning)"/>
         </node>
 
         <node if="$(eval camera_type == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
@@ -65,14 +67,9 @@
             <param name="mtu_size" value="3000"/>
             <param name="inter_pkg_delay" value="0"/>
             <param name="enable_split_laser" value="$(arg split_laser)"/>
-            <param name="binning_x" value="1"/>
-            <param name="binning_y" value="1"/>
+            <param name="binning_x" value="$(arg binning)"/>
+            <param name="binning_y" value="$(arg binning)"/>
         </node>
-
-        <!--
-        <remap from="/$(arg camera_namespace)/i3dr_stereo_camera_right_ctrl/set_camera_info" to="/$(arg camera_namespace)/right/set_camera_info"/>
-        <remap from="/$(arg camera_namespace)/i3dr_stereo_camera_left_ctrl/set_camera_info" to="/$(arg camera_namespace)/left/set_camera_info"/>
-        -->
 
         <!-- Start the tiscamera control node for each camera -->
         <!-- (optional) set inital camera properties using the parameters [Brightness/Exposure/Gain/Exposure_Auto/Gain_Auto] -->

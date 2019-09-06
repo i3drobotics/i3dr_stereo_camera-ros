@@ -21,8 +21,8 @@
     <!-- algorithm 1: OpenCV SGBM -->
     <!-- algorithm 2: JR SGM -->
     <arg name="stereo_algorithm" default="0" />
-    <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="133" />
-    <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="352" />
+    <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="-133" />
+    <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="432" />
     <arg if="$(eval stereo_algorithm == 0)" name="correlation_window_size" default="21" />
     <arg if="$(eval stereo_algorithm == 0)" name="uniqueness_ratio" default="2" />
     <arg if="$(eval stereo_algorithm == 0)" name="speckle_range" default="4" />
@@ -35,8 +35,8 @@
     <!-- Not used in OpenCV Block -->
     <arg if="$(eval stereo_algorithm == 0)" name="texture_threshold" default="10" />
 
-    <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="133" />
-    <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="352" />
+    <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="-133" />
+    <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="432" />
     <arg if="$(eval stereo_algorithm == 1)" name="correlation_window_size" default="21" />
     <arg if="$(eval stereo_algorithm == 1)" name="uniqueness_ratio" default="2" />
     <arg if="$(eval stereo_algorithm == 1)" name="texture_threshold" default="10" />
