@@ -66,15 +66,25 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 		{
 			depth16u = cv::Mat::zeros(disparity.rows, disparity.cols, CV_16U);
 		}
+    float disp_min_val = 99999;
+    float disp_max_val = 0;
 		for (int i = 0; i < disparity.rows; i++)
 		{
 			for (int j = 0; j < disparity.cols; j++)
 			{
 				float disparity_value = disparity.at<float>(i, j);
+        if (disparity_value > disp_min_val){
+          disp_min_val = disparity_value;
+        }
+        if (disparity_value < disp_max_val){
+          disp_max_val = disparity_value;
+        }
+        //std::cout << "disparity: " << disparity_value << std::endl;
 				if (disparity_value > disparityMsg->min_disparity && disparity_value < disparityMsg->max_disparity)
 				{
 					// baseline * focal / disparity
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
+          //std::cout << "depth:" << depth << std::endl;
 					if (depth < _depth_max && depth > 0) //ignore depth values large than user defined maximum (m)
 					{
 						if (publish32f)
@@ -89,6 +99,9 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 				}
 			}
 		}
+
+    std::cout << "min disp: " << disp_min_val << std::endl;
+    std::cout << "max disp: " << disp_max_val << std::endl;
 
 		if (publish32f)
 		{
