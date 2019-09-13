@@ -68,15 +68,17 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 		}
     float disp_min_val = 99999;
     float disp_max_val = 0;
+    float depth_max_val = 0;
+    float depth_min_val = 99999;
 		for (int i = 0; i < disparity.rows; i++)
 		{
 			for (int j = 0; j < disparity.cols; j++)
 			{
 				float disparity_value = disparity.at<float>(i, j);
-        if (disparity_value > disp_min_val){
+        if (disparity_value < disp_min_val){
           disp_min_val = disparity_value;
         }
-        if (disparity_value < disp_max_val){
+        if (disparity_value > disp_max_val){
           disp_max_val = disparity_value;
         }
         //std::cout << "disparity: " << disparity_value << std::endl;
@@ -84,8 +86,16 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 				{
 					// baseline * focal / disparity
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
+          
+          if (depth < depth_min_val){
+            depth_min_val = depth;
+          }
+          if (depth > depth_max_val){
+            depth_max_val = depth;
+          }
+
           //std::cout << "depth:" << depth << std::endl;
-					if (depth < _depth_max && depth > 0) //ignore depth values large than user defined maximum (m)
+					if (depth < depth_max_val && depth > 0) //ignore depth values large than user defined maximum (m)
 					{
 						if (publish32f)
 						{
@@ -102,6 +112,9 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 
     std::cout << "min disp: " << disp_min_val << std::endl;
     std::cout << "max disp: " << disp_max_val << std::endl;
+
+    std::cout << "min depth: " << depth_min_val << std::endl;
+    std::cout << "max depth: " << depth_max_val << std::endl;
 
 		if (publish32f)
 		{
