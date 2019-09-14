@@ -211,6 +211,7 @@
       <param name="p1" value="$(arg p1)" />
       <param name="p2" value="$(arg p2)" />
       <param name="interp" value="$(arg interp)" />
+      <param name="depth_max" value="$(arg depth_max)" />
 
       <param name="jr_config_file" value="$(find i3dr_stereo_camera)/ini/default.param" />
 
@@ -250,5 +251,38 @@
 
   <!-- run rqt control gui for adjusting stereo configuration -->
   <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="$(anon display_controls_)" />
+
+  <!-- Compress images -->
+  <node pkg="image_transport"
+        type="republish"
+        ns="$(arg camera_namespace)"
+        name="img_comp_left_image_topic"
+        args="compressed raw_in:=$(arg left_image_topic) out:=$(arg left_image_topic)" output="screen"/>
+
+  
+  <node pkg="image_transport"
+        type="republish"
+        ns="$(arg camera_namespace)"
+        name="img_comp_right_image_topic"
+        args="compressed raw_in:=$(arg right_image_topic) out:=$(arg right_image_topic)" output="screen"/>
+  <!--
+  <node pkg="image_transport"
+        type="republish"
+        ns="$(arg camera_namespace)"
+        name="img_comp_left_image_rect_topic"
+        args="compressed raw_in:=$(arg left_image_rect_topic) out:=$(arg left_image_rect_topic)" output="screen"/>
+  <node pkg="image_transport"
+        type="republish"
+        ns="$(arg camera_namespace)"
+        name="img_comp_right_image_rect_topic"
+        args="compressed raw_in:=$(arg right_image_rect_topic) out:=$(arg right_image_rect_topic)" output="screen"/>#
+  -->
+
+  <node pkg="image_transport"
+        type="republish"
+        ns="$(arg camera_namespace)"
+        name="img_comp_depth_topic"
+        args="compressed raw_in:=depth out:=depth" output="screen"/>
+  
 
 </launch>

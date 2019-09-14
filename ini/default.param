@@ -4,7 +4,7 @@ Indices Of Preferred Logical Processors of CPU = -1
 [Common]
 3rd Party License = false
 Confirm Log Gui = never
-Log = (type=none,level=warning)
+Log = (type=log,level=warning)
 Parameter Gui = never
 Store Environment = false
 Version = false

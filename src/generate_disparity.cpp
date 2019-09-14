@@ -68,6 +68,8 @@ MatcherOpenCVSGBM *sgbm_matcher;
 MatcherJRSGM *jrsgm_matcher;
 #endif
 
+float _depth_max = 10;
+
 bool isFirstImagesRecevied = false;
 
 int CV_StereoBM = 0;
@@ -255,12 +257,12 @@ PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::P
 
 void updateMatcher(){
   std::cout << "Updating matcher parameters..." << std::endl;
-  matcher->setDisparityRange(_disparity_range);
-  matcher->setWindowSize(_correlation_window_size);
-  matcher->setInterpolation(_interp);
 
   if (_stereo_algorithm == CV_StereoBM || _stereo_algorithm == CV_StereoSGBM)
   {
+    matcher->setDisparityRange(_disparity_range);
+    matcher->setWindowSize(_correlation_window_size);
+    matcher->setInterpolation(_interp);
     //Functions unique to OpenCV Stereo BM & SGBM
     matcher->setMinDisparity(_min_disparity);
     matcher->setUniquenessRatio(_uniqueness_ratio);
@@ -282,6 +284,10 @@ void updateMatcher(){
   }
   else if (_stereo_algorithm == JR_StereoSGM)
   {
+    matcher->setDisparityRange(_disparity_range);
+    matcher->setWindowSize(_correlation_window_size);
+    matcher->setInterpolation(_interp);
+    matcher->setMinDisparity(_min_disparity);
     //Functions unique to JR Stereo SGM
     matcher->setP1(_p1);
     matcher->setP2(_p2);
@@ -540,9 +546,14 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
       if (isValidPoint(mat(v, u)))
       {
         // x,y,z
-        *iter_x = mat(v, u)[0];
-        *iter_y = mat(v, u)[1];
-        *iter_z = mat(v, u)[2];
+        float z = mat(v, u)[2];
+        if (z < _depth_max && z > 0){
+          *iter_x = mat(v, u)[0];
+          *iter_y = mat(v, u)[1];
+          *iter_z = mat(v, u)[2];
+        } else {
+          *iter_x = *iter_y = *iter_z = bad_point;
+        }
       }
       else
       {
@@ -764,6 +775,7 @@ int main(int argc, char **argv)
   float p1, p2;
   bool interp;
   std::string frame_id, left_camera_calibration_url, right_camera_calibration_url, jr_config_file;
+  float depth_max;
 
   std::string ns = ros::this_node::getNamespace();
 
@@ -849,6 +861,11 @@ int main(int argc, char **argv)
   {
     _interp = interp;
     ROS_INFO("interp: %s", interp ? "true" : "false");
+  }
+  if (p_nh.getParam("depth_max", depth_max))
+  {
+    _depth_max = depth_max;
+    ROS_INFO("depth_max: %f", depth_max);
   }
 
   // Dynamic parameters
