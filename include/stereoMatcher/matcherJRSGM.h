@@ -23,12 +23,12 @@ public:
     void setP1(float p1);
     void setP2(float p2);
     void setOcclusionDetection(bool enable);
+    void setSpeckleFilterWindow(int window);
+    void setSpeckleFilterRange(int range);
 
     //Not used in JR SGM
     void setUniquenessRatio(int ratio){};
     void setTextureThreshold(int threshold){};
-    void setSpeckleFilterWindow(int window){};
-    void setSpeckleFilterRange(int range){};
     void setDisp12MaxDiff(int diff){};
     void setPreFilterCap(int cap){};
     void setPreFilterSize(int size){};

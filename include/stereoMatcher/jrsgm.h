@@ -27,6 +27,8 @@ class jrsgm {
         void setP1(float P1);
         void setP2(float P2);
         void setWindowSize(int census_size);
+        void setSpeckleDifference(float diff);
+        void setSpeckleSize(int size);
         void enableInterpolation(bool enable);
         void enableOcclusionDetection(bool enable);
         void enableOccInterpol(bool enable);

@@ -114,9 +114,10 @@ void jrsgm::setImages(cv::Mat left_image, cv::Mat right_image)
 //compute disparity
 int jrsgm::compute(cv::Mat &disp)
 {
-  if (matcher_handle != nullptr)
+  std::cout << "[jrsgm] Starting match..." << std::endl;
+  if (isMemoryValid)
   {
-    if (isMemoryValid)
+    if (matcher_handle != nullptr)
     {
       std::string sgm_log = "./sgm_log.txt";
       try
@@ -140,7 +141,7 @@ int jrsgm::compute(cv::Mat &disp)
     {
       std::cerr << "Matcher handle not found" << std::endl;
       createMatcher();
-      return -1;
+      return -3;
     }
   }
   else
@@ -148,12 +149,14 @@ int jrsgm::compute(cv::Mat &disp)
     return -2;
     std::cerr << "Invalid GPU memory for stereo match" << std::endl;
   }
+  std::cout << "[jrsgm] Match complete." << std::endl;
   return 0;
 }
 
 //backward match disparity
 int jrsgm::backwardMatch(cv::Mat &disp)
 {
+  isMemoryValid = true;
   if (isMemoryValid)
   {
     std::string sgm_log = "./sgm_log.txt";
@@ -182,9 +185,29 @@ int jrsgm::backwardMatch(cv::Mat &disp)
   return 0;
 }
 
+void jrsgm::setSpeckleDifference(float diff){
+  std::cout << "Speckle difference: " << diff << std::endl;
+  diff = diff / 10;
+  for (auto &pyramid : params.oPyramidParams)
+  {
+    pyramid.fSpeckleMaxDiff = diff;
+  }
+  createMatcher();
+}
+
+void jrsgm::setSpeckleSize(int size){
+  std::cout << "Speckle size: " << size << std::endl;
+  size = size / 10;
+  for (auto &pyramid : params.oPyramidParams)
+  {
+    pyramid.iSpeckleMaxSize = size;
+  }
+  createMatcher();
+}
+
 void jrsgm::setP1(float P1)
 {
-  float P1_scaled = P1 / 100;
+  float P1_scaled = P1 / 1000;
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oSGMParams.fP1_E_W = P1_scaled;
@@ -197,7 +220,7 @@ void jrsgm::setP1(float P1)
 
 void jrsgm::setP2(float P2)
 {
-  float P2_scaled = P2 / 100;
+  float P2_scaled = P2 / 1000;
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oSGMParams.fP2_E_W = P2_scaled;
@@ -210,6 +233,10 @@ void jrsgm::setP2(float P2)
 
 void jrsgm::setWindowSize(int census_size)
 {
+  if (census_size % 2 == 0)
+  {
+    census_size++;
+  }
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oMetricParams.nWindowSizeX = census_size;
@@ -221,8 +248,23 @@ void jrsgm::setWindowSize(int census_size)
 
 void jrsgm::setDisparityShift(int shift)
 {
-  params.fTopPredictionShift = shift / pow(2, params.nNumberOfPyramids - 1);
+  //params.fTopPredictionShift = shift / pow(2, params.nNumberOfPyramids - 1);
+  //params.fTopPredictionShift = shift/10;
+  /*
+  std::cout << "disparity: " << shift << std::endl;
+  double x2 = -0.0000463226511471872;
+  double x = 0.2008471924;
+  double c = -22.52815177235;
+  double shift_d = (double)shift;
 
+  double shift_t = (x2*(shift_d*shift_d)) + (x*shift_d) + c;
+  int shift_p = -(int)shift_t;
+  std::cout << "shift: " << shift_p << std::endl;
+  */
+
+  double shift_p = (double)-shift/10.0;
+  //double shift_p = shift;
+  params.fTopPredictionShift = shift_p;
   createMatcher();
 }
 
@@ -235,19 +277,25 @@ void jrsgm::enableSubpixel(bool enable)
 
 void jrsgm::setDisparityRange(int n)
 {
-  /* Set disparity range for all pyramids */
-  if (n % 2)
+  double x2 = -0.0004562532;
+  double x = 1.9971518547;
+  double c = -221.5576254807;
+
+  //disparity_range = (x2*(n*n)) + (x*n) + c;
+  disparity_range = n / 10;
+  //double sub_pix_disparity_range = disparity_range;
+  //force odd number
+  if (disparity_range % 2 == 0)
   {
-    disparity_range = n;
-    params.oPyramidParams[0].nMaximumNumberOfDisparities = n;
-    params.oPyramidParams[1].nMaximumNumberOfDisparities = n;
-    params.oPyramidParams[2].nMaximumNumberOfDisparities = n;
-    params.oPyramidParams[3].nMaximumNumberOfDisparities = n;
-    params.oPyramidParams[4].nMaximumNumberOfDisparities = n;
-
-    params.oFinalSubPixelParameters.nMaximumNumberOfDisparities = n;
+    disparity_range++;
   }
-
+  /* Set disparity range for all pyramids */
+  params.oPyramidParams[0].nMaximumNumberOfDisparities = disparity_range;
+  params.oPyramidParams[1].nMaximumNumberOfDisparities = disparity_range;
+  params.oPyramidParams[2].nMaximumNumberOfDisparities = disparity_range;
+  params.oPyramidParams[3].nMaximumNumberOfDisparities = disparity_range;
+  params.oPyramidParams[4].nMaximumNumberOfDisparities = disparity_range;
+  params.oFinalSubPixelParameters.nMaximumNumberOfDisparities = disparity_range/10;
   createMatcher();
 }
 
@@ -257,6 +305,7 @@ void jrsgm::enableTextureDSI(bool enable)
   {
     pyramid.oSGMParams.bUseDSITexture = enable;
   }
+  createMatcher();
 }
 
 void jrsgm::enableInterpolation(bool enable)
@@ -305,7 +354,7 @@ void jrsgm::createMatcher()
   }
   try
   {
-    checkMemoryValid(image_size.width, image_size.height);
+    //checkMemoryValid(image_size.width, image_size.height);
     isMemoryValid = true;
     if (isMemoryValid)
     {

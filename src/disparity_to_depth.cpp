@@ -81,13 +81,16 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 				}
 				if (disparity_value > disp_max_val)
 				{
-					disp_max_val = disparity_value;
+					if (disparity_value != 99999){
+						disp_max_val = disparity_value;
+					}
 				}
 				//std::cout << "disparity: " << disparity_value << std::endl;
-				if (disparity_value > disparityMsg->min_disparity && disparity_value < disparityMsg->max_disparity)
+				if (disparity_value > disp_min_val && disparity_value < disp_max_val)
 				{
 					// baseline * focal / disparity
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
+					//std::cout << "depth: " << depth << std::endl;
 
 					if (depth < depth_min_val)
 					{

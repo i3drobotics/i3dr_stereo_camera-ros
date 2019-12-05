@@ -14,9 +14,9 @@ void MatcherJRSGM::setupDefaultMatcher(void)
     //setP2(800);
     //setWindowSize(9);
     //setMinDisparity(0);
-    setInterpolation(false);
-    setOcclusionDetection(false);
-    JR_matcher->enableOccInterpol(false);
+    //setInterpolation(false);
+    //setOcclusionDetection(false);
+    //JR_matcher->enableOccInterpol(false);
     //JR_matcher->enableSubpixel(true);
     //JR_matcher->enableTextureDSI(false);
 }
@@ -75,4 +75,11 @@ void MatcherJRSGM::setP2(float P2)
 void MatcherJRSGM::setOcclusionDetection(bool enable)
 {
     JR_matcher->enableOcclusionDetection(enable);
+}
+
+void MatcherJRSGM::setSpeckleFilterWindow(int window){
+    JR_matcher->setSpeckleSize(window);
+}
+void MatcherJRSGM::setSpeckleFilterRange(int range){
+    JR_matcher->setSpeckleDifference(range);
 }
