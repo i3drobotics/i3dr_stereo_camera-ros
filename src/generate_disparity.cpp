@@ -418,6 +418,8 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
   disp_msg.f = f;
   disp_msg.T = T;
 
+  ROS_INFO("F: %f, T: %f", disp_msg.f, disp_msg.T);
+
   double cx_l = msg_left_camera_info->K[2];
   double cx_r = msg_right_camera_info->K[2];
   if (cx_l != cx_r)

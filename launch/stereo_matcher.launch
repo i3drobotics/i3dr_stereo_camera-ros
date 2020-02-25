@@ -88,7 +88,7 @@
 
   <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
 
-  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/default.param"/>
+  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick.param"/>
 
   <arg name="use_i3dr_matcher" default="false"/>
 

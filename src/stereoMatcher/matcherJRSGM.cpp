@@ -44,42 +44,42 @@ int MatcherJRSGM::backwardMatch()
 
 void MatcherJRSGM::setWindowSize(int window_size)
 {
-    JR_matcher->setWindowSize(window_size);
+    //JR_matcher->setWindowSize(window_size);
 }
 
 void MatcherJRSGM::setDisparityRange(int disparity_range)
 {
-    JR_matcher->setDisparityRange(disparity_range);
+    //JR_matcher->setDisparityRange(disparity_range);
 }
 
 void MatcherJRSGM::setMinDisparity(int min_disparity)
 {
-    JR_matcher->setDisparityShift(min_disparity);
+    //JR_matcher->setDisparityShift(min_disparity);
 }
 
 void MatcherJRSGM::setInterpolation(bool enable)
 {
-    JR_matcher->enableInterpolation(enable);
+    //JR_matcher->enableInterpolation(enable);
 }
 
 void MatcherJRSGM::setP1(float P1)
 {
-    JR_matcher->setP1(P1);
+    //JR_matcher->setP1(P1);
 }
 
 void MatcherJRSGM::setP2(float P2)
 {
-    JR_matcher->setP2(P2);
+    //JR_matcher->setP2(P2);
 }
 
 void MatcherJRSGM::setOcclusionDetection(bool enable)
 {
-    JR_matcher->enableOcclusionDetection(enable);
+    //JR_matcher->enableOcclusionDetection(enable);
 }
 
 void MatcherJRSGM::setSpeckleFilterWindow(int window){
-    JR_matcher->setSpeckleSize(window);
+    //JR_matcher->setSpeckleSize(window);
 }
 void MatcherJRSGM::setSpeckleFilterRange(int range){
-    JR_matcher->setSpeckleDifference(range);
+    //JR_matcher->setSpeckleDifference(range);
 }

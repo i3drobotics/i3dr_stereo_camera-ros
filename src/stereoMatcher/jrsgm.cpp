@@ -237,11 +237,15 @@ void jrsgm::setWindowSize(int census_size)
   {
     census_size++;
   }
+  
   for (auto &pyramid : params.oPyramidParams)
   {
     pyramid.oMetricParams.nWindowSizeX = census_size;
     pyramid.oMetricParams.nWindowSizeY = census_size;
   }
+  
+  //params.oPyramidParams[0].oMetricParams.nWindowSizeX = census_size;
+  //params.oPyramidParams[0].oMetricParams.nWindowSizeY = census_size;
 
   createMatcher();
 }
