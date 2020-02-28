@@ -63,7 +63,8 @@
   <arg if="$(eval stereo_algorithm == 2)" name="prefilter_size" default="147" />
   <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="7" />
 
-  <arg name="depth_max" default="3" />
+  <arg name="depth_max" default="10" />
+  <arg name="depth_min" default="0" />
 
   <arg if="$(arg split_laser)" name="laser_suffix" value="_with_laser"/>
   <arg unless="$(arg split_laser)" name="laser_suffix" value=""/>
@@ -88,7 +89,7 @@
 
   <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
 
-  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick.param"/>
+  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick_v2.param"/>
 
   <arg name="use_i3dr_matcher" default="false"/>
 
@@ -177,6 +178,8 @@
       <param name="p1" value="$(arg p1)" />
       <param name="p2" value="$(arg p2" />
 
+      <param name="depth_max" value="$(arg depth_max)" />
+      <param name="depth_min" value="$(arg depth_min)" />
 
       <param name="approximate_sync" value="true" />
       <param name="queue_size" value="50"/>
@@ -213,6 +216,7 @@
       <param name="p2" value="$(arg p2)" />
       <param name="interp" value="$(arg interp)" />
       <param name="depth_max" value="$(arg depth_max)" />
+      <param name="depth_min" value="$(arg depth_min)" />
 
       <param name="jr_config_file" value="$(arg jr_config_file)" />
 
@@ -241,6 +245,7 @@
   <group ns="$(arg camera_namespace)">
     <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="$(anon i3dr_disparity2depth)" output="screen">
       <param name="depth_max" value="$(arg depth_max)" />
+      <param name="depth_min" value="$(arg depth_min)" />
     </node>
   </group>
 

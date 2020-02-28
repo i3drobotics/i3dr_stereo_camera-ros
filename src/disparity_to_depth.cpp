@@ -39,6 +39,7 @@ image_transport::Publisher pub16u_;
 ros::Subscriber sub_;
 
 float _depth_max = 10;
+float _depth_min = 0;
 
 void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 {
@@ -92,18 +93,18 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg)
 					float depth = disparityMsg->T * disparityMsg->f / disparity_value;
 					//std::cout << "depth: " << depth << std::endl;
 
-					if (depth < depth_min_val)
+					if (depth < depth_min_val && depth < _depth_min)
 					{
 						depth_min_val = depth;
 					}
-					if (depth > depth_max_val)
+					if (depth > depth_max_val && depth > _depth_max)
 					{
 						depth_max_val = depth;
 					}
 
 					//std::cout << "depth:" << depth << std::endl;
 					// depth_max_val / _depth_max
-					if (depth < depth_max_val && depth < _depth_max && depth > 0) //ignore depth values large than user defined maximum (m)
+					if (depth < _depth_max && depth > _depth_min) //ignore depth values large than user defined maximum (m)
 					{
 						if (publish32f)
 						{
@@ -154,13 +155,19 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh;
 	ros::NodeHandle p_nh("~");
 
-	float depth_max;
+	float depth_max,depth_min;
 
 	//[Optional] User defined maximum depth (m)
 	if (p_nh.getParam("depth_max", depth_max))
 	{
 		_depth_max = depth_max;
 		ROS_INFO("depth_max: %f", _depth_max);
+	}
+	//[Optional] User defined minimum depth (m)
+	if (p_nh.getParam("depth_min", depth_min))
+	{
+		_depth_min = depth_min;
+		ROS_INFO("depth_min: %f", _depth_min);
 	}
 
 	image_transport::ImageTransport it(nh);

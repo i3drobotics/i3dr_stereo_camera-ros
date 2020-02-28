@@ -26,6 +26,9 @@
 
     <arg name="binning" default="1"/>
 
+    <arg name="reverse_x" default="false"/>
+    <arg name="reverse_y" default="false"/>
+
     <arg name="camera_info_right" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_right.yaml" />
     <arg name="camera_info_left" default="file://${ROS_HOME}/camera_info/$(arg camera_namespace)/$(arg camera_namespace)_left.yaml" />
 
@@ -50,6 +53,8 @@
             <param name="enable_split_laser" value="$(arg split_laser)"/>
             <param name="binning_x" value="$(arg binning)"/>
             <param name="binning_y" value="$(arg binning)"/>
+            <param name="reverse_x" value="$(arg reverse_x)"/>
+            <param name="reverse_y" value="$(arg reverse_y)"/>
         </node>
 
         <node if="$(eval camera_type == 1)" ns="right" name="i3dr_stereo_camera_right_ctrl" pkg="pylon_camera" type="pylon_camera_node" respawn="true" output="screen">
@@ -69,6 +74,8 @@
             <param name="enable_split_laser" value="$(arg split_laser)"/>
             <param name="binning_x" value="$(arg binning)"/>
             <param name="binning_y" value="$(arg binning)"/>
+            <param name="reverse_x" value="$(arg reverse_x)"/>
+            <param name="reverse_y" value="$(arg reverse_y)"/>
         </node>
 
         <!-- Start the tiscamera control node for each camera -->
