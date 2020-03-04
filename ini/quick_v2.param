@@ -46,7 +46,7 @@ Write Reverse Back Match Distance = false
 
 [Parameter]
 Back Disparity Prediction Input File Pattern = back_disparity_prediction/disparity_%06d.tif
-Debug Output Mode = 0
+Debug Output Mode = -1
 Debug Output Path = D:/HOME/Desktop/Error_test/debug
 Disparity Prediction Input File Pattern = disparity_prediction/disparity_%06d.tif
 Joint Image = None
@@ -55,7 +55,7 @@ Morphological Iterations = 1
 Predictor = Shift
 Pyramid Levels = 6
 Same SGM Settings For All Directions = true
-Top Prediction Shift = 8
+Top Prediction Shift = 18
 
 [Pattern]
 File Digits 1 = 1
