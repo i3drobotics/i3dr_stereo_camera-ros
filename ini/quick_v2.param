@@ -55,7 +55,7 @@ Morphological Iterations = 1
 Predictor = Shift
 Pyramid Levels = 6
 Same SGM Settings For All Directions = true
-Top Prediction Shift = 18
+Top Prediction Shift = -8
 
 [Pattern]
 File Digits 1 = 1
