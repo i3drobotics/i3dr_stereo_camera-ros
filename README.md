@@ -13,12 +13,17 @@ cd /path/to/repo
 catkin_make
 ```
 
-### I3DR Stereo Algorithm
+### I3DR Stereo Matcher
 
-To build with the I3DR stereo algorithm use the following command:
+To build with the I3DR Stereo Matcher use the following command:
 
 ``` bash
 catkin_make -DENABLE_I3DR_ALG=ON
+```
+As I3DR Stereo Matcher uses CUDA the following enviromental varaiables should be set to avoid JIT recompiling:
+```
+export CUDA_CACHE_MAXSIZE=2147483648
+export CUDA_CACHE_DISABLE=0
 ```
 
 ## Calibration
