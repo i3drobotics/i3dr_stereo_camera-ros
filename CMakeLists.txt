@@ -45,6 +45,7 @@ generate_messages(
  
 generate_dynamic_reconfigure_options(
 	cfg/i3DR_Disparity.cfg
+	cfg/i3DR_pointCloud.cfg
 	cfg/tiscamera_settings.cfg
 )
 

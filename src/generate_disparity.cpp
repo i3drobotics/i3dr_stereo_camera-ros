@@ -31,6 +31,7 @@
 
 #include <dynamic_reconfigure/server.h>
 #include <i3dr_stereo_camera/i3DR_DisparityConfig.h>
+#include <i3dr_stereo_camera/i3DR_pointCloudConfig.h>
 #include <i3dr_stereo_camera/SaveStereo.h>
 
 #include <boost/filesystem.hpp>
@@ -53,6 +54,8 @@
 #include <sensor_msgs/point_cloud_conversion.h>
 
 #include <string>
+#include <iostream>
+#include <fstream>
 
 using namespace cv;
 
@@ -106,9 +109,33 @@ PointCloudRGB::Ptr _stereo_point_cloud_RGB;
 cv::Mat _points_mat;
 
 bool isInitParamConfig = true;
+bool isInitParam2Config = true;
 int save_index = 0;
 
 ros::Publisher _point_cloud_pub, _point_cloud_normal_pub;
+
+std::string type2str(int type) {
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
 
 //Convert disparity image from opencv Mat to PCL Point Cloud XYZRGB
 PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::Ptr normals)
@@ -481,6 +508,17 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
     ROS_ERROR("Match unsuccessful. Disparity map is empty!");
     return -1;
   }
+  /*
+  for(int i = 0; i < disparity16_.rows; i++)
+  {
+    for(int j = 0; j < disparity16_.cols; j++){
+      float val = disparity16_.at<float>(i,j);
+      if (val >= model.left().fx()){
+        disparity16_.at<float>(i,j) = model.MISSING_Z;
+      }
+    }
+  }
+  */
   std::cout << "[generate_disparity] Formatting disparity for publishing" << std::endl;
   // Fill in DisparityImage image data, converting to 32-bit float
   sensor_msgs::Image &dimage = disparity.image;
@@ -538,10 +576,51 @@ void publish_point_cloud(PointCloudRGB input_pcl,std_msgs::Header header,int row
   ROS_INFO("Published point cloud");
 }
 
+void publish_point_cloud(PointCloudRGBNormal input_pcl,std_msgs::Header header,int rows, int cols){
+  ROS_INFO("Publishing point cloud");
+  sensor_msgs::PointCloud2 pcl2_msg;
+  //Convert point cloud to ros msg
+  pcl::toROSMsg(input_pcl,pcl2_msg);
+
+  pcl2_msg.header = header;
+  pcl2_msg.height = 1;
+  pcl2_msg.width = input_pcl.size();
+  pcl2_msg.is_bigendian = false;
+  pcl2_msg.is_dense = false; // there may be invalid points
+
+  //Publish ROS msg
+  _point_cloud_normal_pub.publish(pcl2_msg);
+  ROS_INFO("Published point cloud");
+}
+
+cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l){
+  cv::Mat q = cv::Mat::zeros(4,4, CV_64F);
+
+  double cx = p_l.at<double>(0,2);
+  double cxr = p_r.at<double>(0,2);
+  double cy = p_l.at<double>(1,2);
+  double fx = m_l.at<double>(0,0);
+  double fy = m_l.at<double>(1,1);
+
+  double p14 = p_r.at<double>(0,3);
+  double T = -p14 / fx;
+  double q33 = -(cx - cxr) / T;
+
+  q.at<double>(0,0) = 1.0;
+  q.at<double>(0,3) = -cx;
+  q.at<double>(1,1) = 1.0;
+  q.at<double>(1,3) = -cy;
+  q.at<double>(2,3) = -fx;
+  q.at<double>(3,2) = 1.0 / T;
+  q.at<double>(3,3) = q33;
+
+  return q;
+}
+
 //TODO multithread this
 void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
-                  const sensor_msgs::ImageConstPtr &msg_img_l, const sensor_msgs::ImageConstPtr &msg_img_r,
-                  const sensor_msgs::CameraInfoConstPtr &msg_info_l, const sensor_msgs::CameraInfoConstPtr &msg_info_r, Mat left_rect)
+                  const sensor_msgs::ImageConstPtr &msg_img_rect_l, const sensor_msgs::ImageConstPtr &msg_img_rect_r,
+                  const sensor_msgs::CameraInfoConstPtr &msg_info_l, const sensor_msgs::CameraInfoConstPtr &msg_info_r)
 {
   ROS_INFO("Converting disparity to point cloud");
   image_geometry::StereoCameraModel model_;
@@ -549,20 +628,38 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
 
   // Calculate point cloud
   const sensor_msgs::Image &dimage = msg_disp->image;
-  const cv::Mat_<float> dmat(dimage.height, dimage.width, (float *)&dimage.data[0], dimage.step);
+
+  //const cv::Mat_<float> dmat(dimage.height, dimage.width, (float *)&dimage.data[0], dimage.step);
+  cv_bridge::CvImagePtr cv_dmat = cv_bridge::toCvCopy(msg_disp->image);
+  //cv::Mat dmat = cv_dmat->image;
+
+  cv::Mat dmat(msg_disp->image.height, msg_disp->image.width, CV_32FC1, const_cast<uchar *>(msg_disp->image.data.data()));
+
+  std::string ty =  type2str( dmat.type());
+  ROS_INFO("Disparity image 1 type: %s %dx%d",ty.c_str(), dmat.cols, dmat.rows );
+
   cv::Mat_<cv::Vec3f> points_mat_; // scratch buffer
   model_.projectDisparityImageTo3d(dmat, points_mat_, true);
 
   points_mat_.copyTo(_points_mat);
   cv::Mat_<cv::Vec3f> mat = points_mat_;
 
+  //cv::Mat points_mat2_;
+  //cv::Mat Q = cv::Mat(model_.reprojectionMatrix());
+  //cv::Mat Q = calc_q(m_l,p_r,p_l);
+  //cv::reprojectImageTo3D(dmat, points_mat2_, Q, true);
+
   PointCloudRGBNormal::Ptr ptCloudNormals(new PointCloudRGBNormal);
   //cv_bridge::CvImagePtr input_image_left, input_image_right;
   //input_image_left = cv_bridge::toCvCopy(msg_img_l, "mono8");
-  _stereo_point_cloud_RGB = Mat2PCL(left_rect, points_mat_, ptCloudNormals);
-  publish_point_cloud(*_stereo_point_cloud_RGB,msg_disp->header,mat.rows,mat.cols);
-
+  ROS_INFO("[i3dr_stereo_camera] Generating point cloud...");
   /*
+  _stereo_point_cloud_RGB = Mat2PCL(left_rect, points_mat_, ptCloudNormals);
+  ROS_INFO("[i3dr_stereo_camera] Point cloud ready...");
+  publish_point_cloud(*_stereo_point_cloud_RGB,msg_disp->header,mat.rows,mat.cols);
+  publish_point_cloud(*ptCloudNormals,msg_disp->header,mat.rows,mat.cols);
+  */
+
   // Fill in new PointCloud2 message (2D image-like layout)
   sensor_msgs::PointCloud2Ptr points_msg = boost::make_shared<sensor_msgs::PointCloud2>();
   points_msg->header = msg_disp->header;
@@ -582,24 +679,26 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
   sensor_msgs::PointCloud2Iterator<uint8_t> iter_b(*points_msg, "b");
 
   namespace enc = sensor_msgs::image_encodings;
-  const std::string &encoding = msg_img_l->encoding;
+  const std::string &encoding = msg_img_rect_l->encoding;
   cv::Mat color;
   if (encoding == enc::MONO8){
-    color = cv::Mat_<uint8_t>(msg_img_l->height, msg_img_l->width,
-                                      (uint8_t *)&msg_img_l->data[0],
-                                      msg_img_l->step);
+    color = cv::Mat_<uint8_t>(msg_img_rect_l->height, msg_img_rect_l->width,
+                                      (uint8_t *)&msg_img_rect_l->data[0],
+                                      msg_img_rect_l->step);
   } else if (encoding == enc::RGB8)
   {
-    color = cv::Mat_<cv::Vec3b>(msg_img_l->height, msg_img_l->width,
-                                    (cv::Vec3b *)&msg_img_l->data[0],
-                                    msg_img_l->step);
+    color = cv::Mat_<cv::Vec3b>(msg_img_rect_l->height, msg_img_rect_l->width,
+                                    (cv::Vec3b *)&msg_img_rect_l->data[0],
+                                    msg_img_rect_l->step);
   } else if (encoding == enc::BGR8)
   {
-    color = cv::Mat_<cv::Vec3b>(msg_img_l->height, msg_img_l->width,
-                                    (cv::Vec3b *)&msg_img_l->data[0],
-                                    msg_img_l->step);
+    color = cv::Mat_<cv::Vec3b>(msg_img_rect_l->height, msg_img_rect_l->width,
+                                    (cv::Vec3b *)&msg_img_rect_l->data[0],
+                                    msg_img_rect_l->step);
   }
 
+  std::ofstream myfile2;
+  myfile2.open ("/home/i3dr/Desktop/points.txt");
   float bad_point = std::numeric_limits<float>::quiet_NaN();
   for (int v = 0; v < mat.rows; ++v)
   {
@@ -629,6 +728,7 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
           *iter_x = mat(v, u)[0];
           *iter_y = mat(v, u)[1];
           *iter_z = mat(v, u)[2];
+          //myfile2 << mat(v, u)[0] << "," << mat(v, u)[1] << "," << mat(v, u)[2] << "\n";
         } else {
           *iter_x = *iter_y = *iter_z = bad_point;
         }
@@ -639,7 +739,9 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
       }
     }
   }
-  */
+  myfile2.close();
+  _point_cloud_pub.publish(points_msg);
+  ROS_INFO("[i3dr_stereo_camera] Point cloud published...");
 }
 
 void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
@@ -654,9 +756,15 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   input_image_left = cv_bridge::toCvCopy(msg_left_image, "mono8");
   input_image_right = cv_bridge::toCvCopy(msg_right_image, "mono8");
 
+  std::string ty =  type2str( input_image_left->image.type() );
+  ROS_INFO("Input image type: %s %dx%d",ty.c_str(), input_image_left->image.cols, input_image_left->image.rows );
+
   //ROS_INFO("Recitifying images...");
   cv::Mat_<uint8_t> left_rect = rectify(input_image_left->image, msg_left_camera_info);
   cv::Mat_<uint8_t> right_rect = rectify(input_image_right->image, msg_right_camera_info);
+
+  ty =  type2str( left_rect.type() );
+  ROS_INFO("Rectified image type: %s %dx%d",ty.c_str(), left_rect.cols, left_rect.rows );
   //ROS_INFO("Rectified images.");
 
   //ROS_INFO("Publishing recitifyed images...");
@@ -684,20 +792,6 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
     ROS_ERROR("Failed to process disparity");
     return;
   }
-
-  // Adjust for any x-offset between the principal points: d' = d - (cx_l - cx_r)
-  double cx_l = model_.left().cx();
-  double cx_r = model_.right().cx();
-  //ROS_INFO("CX_l: %f, CX_r: %f",cx_l,cx_r);
-  
-  if (cx_l != cx_r)
-  {
-    //ROS_INFO("Adjusting x offset of pricipal points");
-    cv::Mat_<float> disp_image(disp_msg->image.height, disp_msg->image.width,
-                               reinterpret_cast<float *>(&disp_msg->image.data[0]),
-                               disp_msg->image.step);
-    cv::subtract(disp_image, cv::Scalar(cx_l - cx_r), disp_image);
-  }
   //ROS_INFO("Stereo Matching complete.");
   
   ROS_INFO("Publishing disparity message...");
@@ -705,15 +799,39 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   ROS_INFO("Published disparity message.");
 
   ROS_INFO("Publishing point cloud message...");
-  pointCloudCb(disp_msg, msg_left_image, msg_right_image, msg_left_camera_info, msg_right_camera_info,left_rect);
+  cv_bridge::CvImage cv_left_rect_image, cv_right_rect_image;
+  cv_left_rect_image.header = msg_left_image->header;
+  cv_left_rect_image.encoding = msg_left_image->encoding;
+  cv_left_rect_image.image = left_rect;
+  cv_right_rect_image.header = msg_right_image->header;
+  cv_right_rect_image.encoding = msg_right_image->encoding;
+  cv_right_rect_image.image = right_rect;
+
+  pointCloudCb(disp_msg, cv_left_rect_image.toImageMsg(), cv_right_rect_image.toImageMsg(), msg_left_camera_info, msg_right_camera_info);
   ROS_INFO("Published point cloud message");
 
   _stereo_left = input_image_left->image;
   _stereo_right = input_image_right->image;
   _stereo_left_rect = left_rect;
   _stereo_right_rect = right_rect;
-  cv_bridge::CvImagePtr disp_image = cv_bridge::toCvCopy(disp_msg->image, "32FC1");
+  cv_bridge::CvImagePtr disp_image = cv_bridge::toCvCopy(disp_msg->image);
   _stereo_disparity = disp_image->image;
+}
+
+void parameter2Callback(i3dr_stereo_camera::i3DR_pointCloudConfig &config, uint32_t level){
+  if (isInitParam2Config)
+  {
+    std::cout << "Setting inital point cloud parameters..." << std::endl;
+    config.depth_max = _depth_max;
+    config.depth_min = _depth_min;
+    isInitParam2Config = false;
+    std::cout << "Inital point cloud parameters set." << std::endl;
+  }
+  else
+  {
+    _depth_max = config.depth_max;
+    _depth_min = config.depth_min;
+  }
 }
 
 void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_t level)
@@ -791,6 +909,9 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "generate_disparity");
   ros::NodeHandle nh;
   ros::NodeHandle p_nh("~");
+
+  ros::NodeHandle d_nh("~/disparity");
+  ros::NodeHandle pc_nh("~/point_cloud");
 
   int stereo_algorithm, min_disparity, disparity_range, correlation_window_size, uniqueness_ratio, texture_threshold, speckle_size, speckle_range, disp12MaxDiff, preFilterCap, preFilterSize;
 
@@ -896,10 +1017,16 @@ int main(int argc, char **argv)
   }
 
   // Dynamic parameters
-  dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_DisparityConfig> server;
+  dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_DisparityConfig> server(d_nh);
   dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_DisparityConfig>::CallbackType f;
   f = boost::bind(&parameterCallback, _1, _2);
   server.setCallback(f);
+
+  // Dynamic point cloud parameters
+  dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_pointCloudConfig> server2(pc_nh);
+  dynamic_reconfigure::Server<i3dr_stereo_camera::i3DR_pointCloudConfig>::CallbackType f2;
+  f2 = boost::bind(&parameter2Callback, _1, _2);
+  server2.setCallback(f2);
 
   // Publishers creation
   _disparity_pub = nh.advertise<stereo_msgs::DisparityImage>(ns + "/disparity", 1, true);

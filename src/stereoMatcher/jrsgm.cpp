@@ -265,9 +265,9 @@ void jrsgm::setDisparityShift(int shift)
   int shift_p = -(int)shift_t;
   std::cout << "shift: " << shift_p << std::endl;
   */
-
-  double shift_p = (double)-shift/10.0;
-  //double shift_p = shift;
+  std::cout << "shift: " << shift << std::endl;
+  double shift_p = (double)shift/100;
+  std::cout << "shift_p: " << shift_p << std::endl;
   params.fTopPredictionShift = shift_p;
   createMatcher();
 }

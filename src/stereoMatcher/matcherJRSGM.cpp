@@ -5,6 +5,8 @@ void MatcherJRSGM::init(void)
     JR_matcher = new jrsgm(param_file_, image_size_);
 
     setupDefaultMatcher();
+    cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
+    cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
 }
 
 void MatcherJRSGM::setupDefaultMatcher(void)
@@ -27,7 +29,7 @@ int MatcherJRSGM::forwardMatch()
     int exitCode = JR_matcher->compute(disparity_lr);
     if (exitCode == 0)
     {
-        disparity_lr.convertTo(disparity_lr, CV_32FC1, -16);
+        disparity_lr.convertTo(disparity_lr, CV_32FC1,-16);
     }
     return exitCode;
 }
@@ -54,7 +56,7 @@ void MatcherJRSGM::setDisparityRange(int disparity_range)
 
 void MatcherJRSGM::setMinDisparity(int min_disparity)
 {
-    //JR_matcher->setDisparityShift(min_disparity);
+    JR_matcher->setDisparityShift(min_disparity);
 }
 
 void MatcherJRSGM::setInterpolation(bool enable)

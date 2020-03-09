@@ -249,6 +249,17 @@
     </node>
   </group>
 
+  <node pkg="nodelet" type="nodelet" args="manager"
+        name="i3dr_stereo_manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="$(anon i3dr_depth2xyz)"
+        args="load depth_image_proc/point_cloud_xyzrgb i3dr_stereo_manager --no-bond">
+    <remap from="depth_registered/image_rect" to="$(arg camera_namespace)/depth"/>
+    <remap from="depth_registered/points" to="$(arg camera_namespace)/points_d"/>
+    <remap from="rgb/image_rect_color" to="$(arg left_image_rect_topic)"/>
+    <remap from="rgb/camera_info" to="$(arg left_camera_info_topic)"/>
+  </node>
+
   <!-- DISPLAY -->
   <!-- display disparity image -->
   <node if="$(arg gui)" pkg="image_view" type="disparity_view" name="$(anon disparity_view)" output="screen">
