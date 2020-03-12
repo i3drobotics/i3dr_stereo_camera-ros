@@ -1,12 +1,17 @@
 #ifndef MATCHEROPENCVBLOCK_H
 #define MATCHEROPENCVBLOCK_H
 
+//#define WITH_CUDA
+
 #include "stereoMatcher/abstractStereoMatcher.h"
+#ifdef WITH_CUDA
+  #include "opencv2/cudastereo.hpp"
+#endif
 
 class MatcherOpenCVBlock : public AbstractStereoMatcher
 {
 public:
-    explicit MatcherOpenCVBlock(std::string &param_file,cv::Size _image_size)
+    explicit MatcherOpenCVBlock(std::string &param_file, cv::Size _image_size)
         : AbstractStereoMatcher(param_file, _image_size)
     {
         init();
@@ -33,6 +38,11 @@ public:
     void setOcclusionDetection(bool enable){};
 
 private:
+#ifdef WITH_CUDA
+    bool enable_gpu = true; // issues with OpenCV StereoBM mean this is not currently useable
+    cv::Ptr<cv::cuda::StereoBM> cuda_matcher;
+    cv::cuda::GpuMat cuda_left, cuda_right, cuda_disp_lr, cuda_disp_rl;
+#endif
     cv::Ptr<cv::StereoBM> matcher;
     void init(void);
     void setupDefaultMatcher(void);

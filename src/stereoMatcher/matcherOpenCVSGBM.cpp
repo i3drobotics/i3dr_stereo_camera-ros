@@ -11,12 +11,12 @@ void MatcherOpenCVSGBM::init(void)
 
 void MatcherOpenCVSGBM::setupDefaultMatcher(void)
 {
-  matcher = cv::StereoSGBM::create(0, 64, 9);
+  matcher = cv::StereoSGBM::create(64, 9);
 }
 
 int MatcherOpenCVSGBM::forwardMatch()
 {
- try
+  try
   {
     matcher->compute(*left, *right, disparity_lr);
     if (interpolate)
@@ -34,9 +34,11 @@ int MatcherOpenCVSGBM::forwardMatch()
     disparity_lr.convertTo(disparity_lr, CV_32FC1);
     return 0;
   }
-  catch (...)
+  catch ( cv::Exception& e )
   {
-    std::cerr << "Error in SGBM match parameters" << std::endl;
+    const char* err_msg = e.what();
+    std::cerr << "Error in OpenCV StereoSGBM parameters" << std::endl;
+    std::cerr << err_msg << std::endl;
     return -1;
   }
 }
@@ -102,6 +104,7 @@ void MatcherOpenCVSGBM::setP2(float p2)
   matcher->setP2(p2);
 }
 
-void MatcherOpenCVSGBM::setPreFilterCap(int cap){
+void MatcherOpenCVSGBM::setPreFilterCap(int cap)
+{
   matcher->setPreFilterCap(cap);
 }

@@ -4,6 +4,7 @@
 #include <PhobosIntegration/PhobosIntegration.hpp>
 #include <stereoMatcher/cudaMem.h>
 #include <iostream>
+#include <fstream>
 
 class jrsgm {
     public:
@@ -33,6 +34,8 @@ class jrsgm {
         void enableOcclusionDetection(bool enable);
         void enableOccInterpol(bool enable);
         void enableTextureDSI(bool enable);
+        void enablePyramid(bool enable, int pyramid_num);
+        void maxPyramid(int pyramid_num);
 
         void setImages(cv::Mat left_image, cv::Mat right_image);
 
@@ -55,10 +58,19 @@ class jrsgm {
         cudaMem cudaMemory;
 
         void init(std::string &sConfigFile, cv::Size image_size);
+        std::vector<std::string> ReadFileRaw(std::string &sConfigFile);
+        void WriteIniFileRaw(std::string &filename, std::vector<std::string> lines);
+        void EditLineRaw(std::vector<std::string> *lines, std::string value, int line_num);
+        bool EditParamRaw(std::vector<std::string> *lines, std::string param_name,std::string param_value);
+        bool EditPyramidParamRaw(std::vector<std::string> *lines, int pyramid_num,std::string param_name,std::string param_value,bool is_subpix=false);
         cv::Size image_size;
         cv::Mat image_right, image_left;
 
         bool isMemoryValid;
+
+        std::string param_file;
+        std::vector<std::string> params_raw;
+        std::string tmp_param_file = "./tmp.param";
 
         int round_up_to_32(int val);
         int checkMemoryDSI(int image_width, int image_height);

@@ -6,7 +6,7 @@
 class MatcherOpenCVSGBM : public AbstractStereoMatcher
 {
 public:
-  explicit MatcherOpenCVSGBM(std::string &param_file,cv::Size _image_size)
+  explicit MatcherOpenCVSGBM(std::string &param_file, cv::Size _image_size)
       : AbstractStereoMatcher(param_file, _image_size)
   {
     init();
@@ -26,7 +26,7 @@ public:
   void setDisp12MaxDiff(int diff);
   void setInterpolation(bool enable);
   void setPreFilterCap(int cap);
-    
+
   //Not used in OpenCV SGBM
   void setTextureThreshold(int threshold){};
   void setPreFilterSize(int size){};

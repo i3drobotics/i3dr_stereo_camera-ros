@@ -56,12 +56,12 @@
   <arg if="$(eval stereo_algorithm == 2)" name="interp" default="false"/>
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_range" default="5" />
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_size" default="1000" />
+  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="5" />
   
   <!-- Not used in JR SGM -->
   <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="2" />
   <arg if="$(eval stereo_algorithm == 2)" name="texture_threshold" default="10" />
   <arg if="$(eval stereo_algorithm == 2)" name="prefilter_size" default="147" />
-  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="7" />
 
   <arg name="depth_max" default="10" />
   <arg name="depth_min" default="0" />
@@ -89,7 +89,7 @@
 
   <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
 
-  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick_v2.param"/>
+  <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick.param"/>
 
   <arg name="use_i3dr_matcher" default="false"/>
 
@@ -214,6 +214,8 @@
       <param name="speckle_size" value="$(arg speckle_size)" />
       <param name="p1" value="$(arg p1)" />
       <param name="p2" value="$(arg p2)" />
+      <param name="prefilter_size" value="$(arg prefilter_size)" />
+      <param name="prefilter_cap" value="$(arg prefilter_cap)" />
       <param name="interp" value="$(arg interp)" />
       <param name="depth_max" value="$(arg depth_max)" />
       <param name="depth_min" value="$(arg depth_min)" />

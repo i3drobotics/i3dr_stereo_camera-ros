@@ -26,11 +26,12 @@ public:
     void setSpeckleFilterWindow(int window);
     void setSpeckleFilterRange(int range);
 
+    void setPreFilterCap(int cap); // used for max pyramids instead
+
     //Not used in JR SGM
     void setUniquenessRatio(int ratio){};
     void setTextureThreshold(int threshold){};
     void setDisp12MaxDiff(int diff){};
-    void setPreFilterCap(int cap){};
     void setPreFilterSize(int size){};
 
 private:

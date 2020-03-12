@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.1)
 set (CMAKE_CXX_STANDARD 11)
 project(i3dr_stereo_camera)
 
@@ -9,16 +9,28 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
-# build with i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=ON'
-# build without i3dr algorithm: 'catkin_make -DENABLE_I3DR_ALG=OFF'
-option(ENABLE_I3DR_ALG "Use I3DR Matching algorithm" OFF)
-if (ENABLE_I3DR_ALG)
-	#Add FindPhobos.cmake directory to CMAKE_MODULE_PATH
+# Build with cuda: 'catkin_make -DWITH_CUDA=ON'
+# Enables OpenCV CUDA StereoBM
+# ROS package: 'vision_opencv' must be re-compiled with cuda enabled opencv library
+# Install OpenCV 3.3.1 with CUDA enabled (-DWITH_CUDA) to /usr/local
+# Source OpenCV install location after sourcing ros (add this to ~/.bashrc):
+	# source source /opt/ros/kinetic/setup.bash
+	# export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
+	# export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+option(WITH_CUDA "Use OpenCV CUDA Libraries" OFF)
+if (WITH_CUDA)
+	add_definitions(-DWITH_CUDA)
+endif()
+
+# build with i3dr algorithm: 'catkin_make -DWITH_I3DR_ALG=ON'
+option(WITH_I3DR_ALG "Use I3DR Matching algorithm" OFF)
+if (WITH_I3DR_ALG)
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 	find_package(Phobos REQUIRED)
-	add_definitions(-DENABLE_I3DR_ALG)
-else (ENABLE_I3DR_ALG)
-	find_package(OpenCV REQUIRED)
+	add_definitions(-DWITH_I3DR_ALG)
+else (WITH_I3DR_ALG)
+	# OpenCV 3.3.1 Required for I3DR stereo algorithms
+	find_package(OpenCV 3.3.1 REQUIRED)
 endif()
 
 find_package(PCL 1.2 REQUIRED)
@@ -62,7 +74,7 @@ link_directories(
 	)
 add_definitions(${PCL_DEFINITIONS})
 
-if (PHOBOS_FOUND)
+if (WITH_I3DR_ALG)
 	add_executable(
 		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/jrsgm.cpp src/stereoMatcher/matcherJRSGM.cpp 
 	)
@@ -74,7 +86,7 @@ if (PHOBOS_FOUND)
 		${PCL_LIBRARIES}
 		cudaMem
 	)
-else (PHOBOS_FOUND)
+else (WITH_I3DR_ALG)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
 	add_executable(
 		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp
@@ -88,6 +100,15 @@ else (PHOBOS_FOUND)
 	)
 endif()
 
+add_executable(
+	stereo_gui src/stereo_gui.cpp
+)
+target_link_libraries(
+	stereo_gui
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	${PCL_LIBRARIES}
+)
 
 add_executable(
 	rectify src/rectify.cpp
