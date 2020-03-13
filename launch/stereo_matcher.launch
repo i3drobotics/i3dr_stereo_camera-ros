@@ -3,7 +3,6 @@
 <launch>
 
   <!-- SETUP ARGUMENTS -->
-  <arg name="gui" default="false"/>
   <arg name="camera_namespace" default="stereo"/>
   <arg name="split_laser" default="false"/>
 
@@ -310,12 +309,6 @@
     <remap from="depth_registered/points" to="$(arg camera_namespace)/points_d"/>
     <remap from="rgb/image_rect_color" to="$(arg left_image_rect_topic)"/>
     <remap from="rgb/camera_info" to="$(arg left_camera_info_topic)"/>
-  </node>
-
-  <!-- DISPLAY -->
-  <!-- display disparity image -->
-  <node if="$(arg gui)" pkg="image_view" type="disparity_view" name="$(anon disparity_view)" output="screen">
-    <remap from="image" to="/$(arg camera_namespace)/disparity" />
   </node>
 
   <!-- run rqt control gui for adjusting stereo configuration -->

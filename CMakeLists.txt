@@ -9,6 +9,18 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
+option(WITH_QT "Build QT Application" OFF)
+if(WITH_QT)
+	set(CMAKE_AUTOMOC ON)
+	set(CMAKE_AUTOUIC ON)
+	set(CMAKE_AUTORCC ON)
+	set(CMAKE_INCLUDE_CURRENT_DIR ON)
+	find_package(Qt4 REQUIRED)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+	find_package(VTK 6 REQUIRED)
+	include(${VTK_USE_FILE})
+endif()
+
 # Build with cuda: 'catkin_make -DWITH_CUDA=ON'
 # Enables OpenCV CUDA Stereo matchers
 # ROS package: 'vision_opencv' must be re-compiled with cuda enabled opencv library
@@ -38,8 +50,8 @@ find_package(PCL 1.2 REQUIRED)
 include_directories(
 	include
 	${Phobos_INCLUDE_DIRS}
-    ${catkin_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
+	${catkin_INCLUDE_DIRS}
+	${PCL_INCLUDE_DIRS}
 )
 
 add_service_files(
@@ -71,6 +83,7 @@ link_directories(
 	${PCL_LIBRARY_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}/bin
 	)
+
 add_definitions(${PCL_DEFINITIONS})
 
 if (WITH_I3DR_ALG)
@@ -150,15 +163,23 @@ else (WITH_I3DR_ALG)
 	endif()
 endif()
 
-add_executable(
-	stereo_gui src/stereo_gui.cpp
-)
-target_link_libraries(
-	stereo_gui
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	${PCL_LIBRARIES}
-)
+if(WITH_QT)
+	add_executable(
+		stereo_gui src/stereo_gui.cpp
+		include/StereoGUI/StereoGUI.h
+		src/StereoGUI/StereoGUI.cpp
+		src/StereoGUI/StereoGUI.ui
+		#src/StereoGUI/resources.qrc
+	)
+	target_link_libraries(
+		stereo_gui
+		${catkin_LIBRARIES}
+		${OpenCV_LIBRARIES}
+		${PCL_LIBRARIES}
+		${QT_LIBRARIES}
+		${VTK_LIBRARIES}
+	)
+endif()
 
 add_executable(
 	rectify src/rectify.cpp

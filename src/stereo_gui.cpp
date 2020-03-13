@@ -28,10 +28,17 @@
 #include <pcl/point_cloud.h>
 #include <pcl/io/ply_io.h>
 
+#include "boost/date_time/posix_time/posix_time.hpp"
+
+#include "StereoGUI/StereoGUI.h"
+#include <QApplication>
+#include <QTimer>
+#include <QGraphicsScene>
+
 using namespace cv;
 
-typedef pcl::PointCloud<pcl::PointXYZRGBNormal> PointCloudRGBNormal;
-typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
+typedef pcl::PointXYZRGB PointT;
+typedef pcl::PointCloud<PointT> PointCloudT;
 
 typedef message_filters::sync_policies::ApproximateTime<
     sensor_msgs::Image, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
@@ -43,22 +50,79 @@ typedef message_filters::sync_policies::ApproximateTime<
 
 cv::Mat left_image_, right_image_, right_rect_image_, left_rect_image_;
 cv::Mat disp_image_, depth_image_;
-PointCloudRGB::Ptr _point_cloud;
+PointCloudT::Ptr _point_cloud;
+StereoGUI *stereoGUI;
+QTimer *rosUpdateTimer;
+
+void updateGUILastUpdateTime(ros::Time time){
+    boost::posix_time::ptime my_posix_time = time.toBoost();
+    std::string iso_time_str = boost::posix_time::to_iso_extended_string(my_posix_time);
+    std::string text = iso_time_str;
+    stereoGUI->updateTimeText(text);
+}
+
+void updateGUIImage(const sensor_msgs::ImageConstPtr &msg_image, QGraphicsScene *gs){
+    cv::Mat image;
+    image = cv_bridge::toCvCopy(msg_image)->image;
+    cv::Mat image_bgr;
+    cvtColor(image, image_bgr, CV_GRAY2BGR);
+    stereoGUI->updateImage(image_bgr,gs);
+}
+
+void updateGUIDepthImage(const sensor_msgs::ImageConstPtr &msg_image, QGraphicsScene *gs){
+    cv::Mat image;
+    image = cv_bridge::toCvCopy(msg_image,sensor_msgs::image_encodings::TYPE_32FC1)->image;
+    /*
+    cv::Mat image_uchar;
+    image.convertTo(image_uchar, CV_8UC1);
+    */
+    cv::Mat image_uchar_scaled;
+    image.convertTo(image_uchar_scaled, CV_8UC1, 255, 0); 
+    cv::Mat image_bgr;
+    cvtColor(image_uchar_scaled, image_bgr, CV_GRAY2BGR);
+    stereoGUI->updateImage(image_bgr,gs);
+}
 
 void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
 {
+    updateGUIImage(msg_left_image,stereoGUI->getLeftGS());
+    updateGUIImage(msg_right_image,stereoGUI->getRightGS());
+    updateGUILastUpdateTime(ros::Time::now());
 }
 
 void imageRectCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
 {
+    updateGUILastUpdateTime(ros::Time::now());
 }
 
 void depthCb(const stereo_msgs::DisparityImageConstPtr &msg_disp, const sensor_msgs::ImageConstPtr &msg_depth, const sensor_msgs::PointCloud2ConstPtr &msg_points)
 {
+    updateGUIDepthImage(msg_depth,stereoGUI->getDepthGS());
+
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(*msg_points, pcl_pc2);
+    PointCloudT::Ptr _point_cloud = PointCloudT::Ptr(new PointCloudT);
+    pcl::fromPCLPointCloud2(pcl_pc2, *_point_cloud);
+    stereoGUI->updatePoints(_point_cloud);
+
+    updateGUILastUpdateTime(ros::Time::now());
+}
+
+void updateROS(){
+    if (ros::ok()){
+        ros::spinOnce();
+    } else {
+        rosUpdateTimer->stop();
+        stereoGUI->close();
+    }
 }
 
 int main(int argc, char **argv)
 {
+    // Creates an instance of QApplication
+    QApplication app(argc, argv);
+    
+    // Create ros node instance
     ros::init(argc, argv, "stereo_gui");
     ros::NodeHandle nh;
     ros::NodeHandle p_nh("~");
@@ -88,5 +152,15 @@ int main(int argc, char **argv)
     message_filters::Synchronizer<policy_depth> sync_depth(policy_depth(10), sub_disparity, sub_depth, sub_points);
     sync_depth.registerCallback(boost::bind(&depthCb, _1, _2, _3));
 
-    ros::spin();
+    stereoGUI = new StereoGUI();
+    stereoGUI->show(); // Show main window
+
+    rosUpdateTimer = new QTimer();
+    QObject::connect(rosUpdateTimer, &QTimer::timeout, updateROS);
+    rosUpdateTimer->start();
+
+    int exit_code = app.exec();
+
+    rosUpdateTimer->stop();
+    return exit_code;
 }
