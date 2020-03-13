@@ -1,7 +1,7 @@
-#include <stereoMatcher/jrsgm.h>
+#include <stereoMatcher/I3DRSGM.h>
 
 //Initialise matcher
-void jrsgm::init(std::string &sConfigFile, cv::Size _image_size)
+void I3DRSGM::init(std::string &sConfigFile, cv::Size _image_size)
 {
   this->image_size = _image_size;
   this->param_file = sConfigFile;
@@ -12,7 +12,7 @@ void jrsgm::init(std::string &sConfigFile, cv::Size _image_size)
   createMatcher();
 }
 
-bool jrsgm::EditParamRaw(std::vector<std::string> *lines, std::string param_name, std::string param_value)
+bool I3DRSGM::EditParamRaw(std::vector<std::string> *lines, std::string param_name, std::string param_value)
 {
   // find location of pyramid in file
   std::string full_parameters_string = param_name + " = " + param_value;
@@ -32,7 +32,7 @@ bool jrsgm::EditParamRaw(std::vector<std::string> *lines, std::string param_name
   return param_found;
 }
 
-bool jrsgm::EditPyramidParamRaw(std::vector<std::string> *lines, int pyramid_num, std::string param_name, std::string param_value, bool is_subpix)
+bool I3DRSGM::EditPyramidParamRaw(std::vector<std::string> *lines, int pyramid_num, std::string param_name, std::string param_value, bool is_subpix)
 {
   // find location of pyramid in file
   std::string pyramid_string;
@@ -71,12 +71,12 @@ bool jrsgm::EditPyramidParamRaw(std::vector<std::string> *lines, int pyramid_num
   return pyramid_found && param_found;
 }
 
-void jrsgm::EditLineRaw(std::vector<std::string> *lines, std::string value, int line_num)
+void I3DRSGM::EditLineRaw(std::vector<std::string> *lines, std::string value, int line_num)
 {
   lines->at(line_num) = value + "\n";
 }
 
-std::vector<std::string> jrsgm::ReadFileRaw(std::string &filename)
+std::vector<std::string> I3DRSGM::ReadFileRaw(std::string &filename)
 {
   std::ifstream file(filename);
   std::vector<std::string> lines;
@@ -96,7 +96,7 @@ std::vector<std::string> jrsgm::ReadFileRaw(std::string &filename)
   return lines;
 }
 
-void jrsgm::WriteIniFileRaw(std::string &filename, std::vector<std::string> lines)
+void I3DRSGM::WriteIniFileRaw(std::string &filename, std::vector<std::string> lines)
 {
   std::ofstream file(filename);
   if (file.is_open())
@@ -114,17 +114,17 @@ void jrsgm::WriteIniFileRaw(std::string &filename, std::vector<std::string> line
   }
 }
 
-int jrsgm::getErrorDisparity(void)
+int I3DRSGM::getErrorDisparity(void)
 {
   return -10000;
 }
 
-int jrsgm::round_up_to_32(int val)
+int I3DRSGM::round_up_to_32(int val)
 {
   return round(val / 32) * 32;
 }
 
-size_t jrsgm::checkMemoryAvailable()
+size_t I3DRSGM::checkMemoryAvailable()
 {
   //re-calculate current CUDA GPU memory
   cudaMemory.calcMem();
@@ -139,7 +139,7 @@ size_t jrsgm::checkMemoryAvailable()
   return (memFree);
 }
 
-int jrsgm::checkMemoryCensus(int image_width, int image_height)
+int I3DRSGM::checkMemoryCensus(int image_width, int image_height)
 {
   int num_of_gpus = params.oGPUs.size();
   int num_of_pyramids = params.nNumberOfPyramids;
@@ -163,7 +163,7 @@ int jrsgm::checkMemoryCensus(int image_width, int image_height)
   return MemoryCensus_PerGPU;
 }
 
-int jrsgm::checkMemoryDSI(int image_width, int image_height)
+int I3DRSGM::checkMemoryDSI(int image_width, int image_height)
 {
   int num_of_pyramids = params.nNumberOfPyramids;
   int num_of_disparities = params.oPyramidParams[0].nMaximumNumberOfDisparities;
@@ -181,13 +181,13 @@ int jrsgm::checkMemoryDSI(int image_width, int image_height)
   return MemoryDSI_PerGPU;
 }
 
-int jrsgm::checkMemoryExtra(int image_width, int image_height)
+int I3DRSGM::checkMemoryExtra(int image_width, int image_height)
 {
   int num_of_pyramids = params.nNumberOfPyramids;
   return (num_of_pyramids * (image_width * image_height * 4 * 10));
 }
 
-bool jrsgm::checkMemoryValid(int image_width, int image_height)
+bool I3DRSGM::checkMemoryValid(int image_width, int image_height)
 {
   int memoryDSI = checkMemoryDSI(image_width, image_height);
   int memoryCensus = checkMemoryCensus(image_width, image_height);
@@ -209,7 +209,7 @@ bool jrsgm::checkMemoryValid(int image_width, int image_height)
   }
 }
 
-void jrsgm::setImages(cv::Mat left_image, cv::Mat right_image)
+void I3DRSGM::setImages(cv::Mat left_image, cv::Mat right_image)
 {
   left_image.copyTo(this->image_left);
   right_image.copyTo(this->image_right);
@@ -217,9 +217,9 @@ void jrsgm::setImages(cv::Mat left_image, cv::Mat right_image)
 }
 
 //compute disparity
-int jrsgm::compute(cv::Mat &disp)
+int I3DRSGM::compute(cv::Mat &disp)
 {
-  std::cout << "[jrsgm] Starting match..." << std::endl;
+  std::cout << "[I3DRSGM] Starting match..." << std::endl;
   if (isMemoryValid)
   {
     if (matcher_handle != nullptr)
@@ -254,14 +254,14 @@ int jrsgm::compute(cv::Mat &disp)
     return -2;
     std::cerr << "Invalid GPU memory for stereo match" << std::endl;
   }
-  std::cout << "[jrsgm] Match complete." << std::endl;
+  std::cout << "[I3DRSGM] Match complete." << std::endl;
   return 0;
 }
 
 //backward match disparity
-int jrsgm::backwardMatch(cv::Mat &disp)
+int I3DRSGM::backwardMatch(cv::Mat &disp)
 {
-  std::cout << "[jrsgm] Starting match..." << std::endl;
+  std::cout << "[I3DRSGM] Starting match..." << std::endl;
   if (isMemoryValid)
   {
     if (matcher_handle != nullptr)
@@ -296,11 +296,11 @@ int jrsgm::backwardMatch(cv::Mat &disp)
     return -2;
     std::cerr << "Invalid GPU memory for stereo match" << std::endl;
   }
-  std::cout << "[jrsgm] Match complete." << std::endl;
+  std::cout << "[I3DRSGM] Match complete." << std::endl;
   return 0;
 }
 
-void jrsgm::setSpeckleDifference(float diff)
+void I3DRSGM::setSpeckleDifference(float diff)
 {
   std::cout << "Speckle difference: " << diff << std::endl;
   diff = diff / 10;
@@ -323,7 +323,7 @@ void jrsgm::setSpeckleDifference(float diff)
   createMatcher();
 }
 
-void jrsgm::setSpeckleSize(int size)
+void I3DRSGM::setSpeckleSize(int size)
 {
   std::cout << "Speckle size: " << size << std::endl;
   size = size / 10;
@@ -345,7 +345,7 @@ void jrsgm::setSpeckleSize(int size)
   createMatcher();
 }
 
-void jrsgm::setP1(float P1)
+void I3DRSGM::setP1(float P1)
 {
   float P1_scaled = P1 / 1000;
   float P1_subpix = P1_scaled / 10;
@@ -380,7 +380,7 @@ void jrsgm::setP1(float P1)
   createMatcher();
 }
 
-void jrsgm::setP2(float P2)
+void I3DRSGM::setP2(float P2)
 {
   float P2_scaled = P2 / 1000;
   float P2_subpix = P2_scaled / 10;
@@ -416,7 +416,7 @@ void jrsgm::setP2(float P2)
   createMatcher();
 }
 
-void jrsgm::setWindowSize(int census_size)
+void I3DRSGM::setWindowSize(int census_size)
 {
   if (census_size % 2 == 0)
   {
@@ -447,7 +447,7 @@ void jrsgm::setWindowSize(int census_size)
   createMatcher();
 }
 
-void jrsgm::setDisparityShift(int shift)
+void I3DRSGM::setDisparityShift(int shift)
 {
   //params.fTopPredictionShift = shift_p;
 
@@ -462,12 +462,17 @@ void jrsgm::setDisparityShift(int shift)
   createMatcher();
 }
 
-void jrsgm::maxPyramid(int pyramid_num){
+void I3DRSGM::maxPyramid(int pyramid_num){
   std::string param_val_true = "true";
   std::string param_val_false = "false";
   std::string param_name = "Process This Pyramid";
 
+  bool include_subpix = false;
+
   if (pyramid_num > params.oPyramidParams.size()){
+    if (pyramid_num >= params.oPyramidParams.size() + 1){ //enable subpixel if pyramid number is 1+ number of pyramids available
+      include_subpix = true;
+    }
     pyramid_num = params.oPyramidParams.size();
   }
 
@@ -485,11 +490,16 @@ void jrsgm::maxPyramid(int pyramid_num){
     i++;
     j--;
   }
+  if (include_subpix){
+    enableSubpixel(true);
+  } else {
+    enableSubpixel(false);
+  }
 
   createMatcher();
 }
 
-void jrsgm::enablePyramid(bool enable, int pyramid_num){
+void I3DRSGM::enablePyramid(bool enable, int pyramid_num){
   std::string param_val;
   if (enable)
   {
@@ -506,7 +516,7 @@ void jrsgm::enablePyramid(bool enable, int pyramid_num){
   createMatcher();
 }
 
-void jrsgm::enableSubpixel(bool enable)
+void I3DRSGM::enableSubpixel(bool enable)
 {
   //params.oFinalSubPixelParameters.bCompute = enable;
 
@@ -526,7 +536,7 @@ void jrsgm::enableSubpixel(bool enable)
   createMatcher();
 }
 
-void jrsgm::setDisparityRange(int n)
+void I3DRSGM::setDisparityRange(int n)
 {
   disparity_range = n / 10;
   //force odd number
@@ -547,7 +557,7 @@ void jrsgm::setDisparityRange(int n)
   createMatcher();
 }
 
-void jrsgm::enableTextureDSI(bool enable)
+void I3DRSGM::enableTextureDSI(bool enable)
 {
   /*
   for (auto &pyramid : params.oPyramidParams)
@@ -581,7 +591,7 @@ void jrsgm::enableTextureDSI(bool enable)
   createMatcher();
 }
 
-void jrsgm::enableInterpolation(bool enable)
+void I3DRSGM::enableInterpolation(bool enable)
 {
   /* Toggle interpolation */
   //params.oPyramidParams[1].bInterpol = enable
@@ -609,7 +619,7 @@ void jrsgm::enableInterpolation(bool enable)
   createMatcher();
 }
 
-void jrsgm::enableOcclusionDetection(bool enable)
+void I3DRSGM::enableOcclusionDetection(bool enable)
 {
   /* Toggle occlusion detection */
   /*
@@ -644,7 +654,7 @@ void jrsgm::enableOcclusionDetection(bool enable)
   createMatcher();
 }
 
-void jrsgm::enableOccInterpol(bool enable)
+void I3DRSGM::enableOccInterpol(bool enable)
 {
   /* Toggle occlusion interpolation */
   /*
@@ -679,7 +689,7 @@ void jrsgm::enableOccInterpol(bool enable)
   createMatcher();
 }
 
-void jrsgm::createMatcher()
+void I3DRSGM::createMatcher()
 {
   if (matcher_handle != nullptr)
   {

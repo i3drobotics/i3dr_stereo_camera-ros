@@ -1,13 +1,13 @@
-#ifndef MATCHERJRSGM_H
-#define MATCHERJRSGM_H
+#ifndef MATCHERI3DRSGM_H
+#define MATCHERI3DRSGM_H
 
 #include "stereoMatcher/abstractStereoMatcher.h"
-#include "stereoMatcher/jrsgm.h"
+#include "stereoMatcher/I3DRSGM.h"
 
-class MatcherJRSGM : public AbstractStereoMatcher
+class MatcherI3DRSGM : public AbstractStereoMatcher
 {
 public:
-    explicit MatcherJRSGM(std::string &param_file, cv::Size image_size)
+    explicit MatcherI3DRSGM(std::string &param_file, cv::Size image_size)
         : AbstractStereoMatcher(param_file,image_size), param_file_(param_file), image_size_(image_size)
     {
         init();
@@ -42,7 +42,7 @@ private:
     std::string param_file_;
     cv::Size image_size_;
 
-    jrsgm *JR_matcher;
+    I3DRSGM *matcher;
 };
 
-#endif // MATCHERJRSGM_H
+#endif // MATCHERI3DRSGM_H

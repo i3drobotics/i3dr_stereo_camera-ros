@@ -1,18 +1,18 @@
-#ifndef JRSGM_H
-#define JRSGM_H
+#ifndef I3DRSGM_H
+#define I3DRSGM_H
 
 #include <PhobosIntegration/PhobosIntegration.hpp>
 #include <stereoMatcher/cudaMem.h>
 #include <iostream>
 #include <fstream>
 
-class jrsgm {
+class I3DRSGM {
     public:
-        jrsgm(std::string &sConfigFile,cv::Size image_size){
+        I3DRSGM(std::string &sConfigFile,cv::Size image_size){
             init(sConfigFile,image_size);
         }
     
-        ~jrsgm(void){
+        ~I3DRSGM(void){
             if (matcher_handle != nullptr){
                 JR::Phobos::DestroyMatchStereoHandle(matcher_handle);
             }
@@ -80,4 +80,4 @@ class jrsgm {
         bool checkMemoryValid(int image_width, int image_height);
 };
 
-#endif // JRSGM_H
+#endif // I3DRSGM_H

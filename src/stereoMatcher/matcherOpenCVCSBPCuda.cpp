@@ -1,6 +1,6 @@
-#include "stereoMatcher/matcherOpenCVBlockCuda.h"
+#include "stereoMatcher/matcherOpenCVCSBPCuda.h"
 
-void MatcherOpenCVBlockCuda::init(void)
+void MatcherOpenCVCSBPCuda::init(void)
 {
     setupDefaultMatcher();
 
@@ -15,12 +15,12 @@ void MatcherOpenCVBlockCuda::init(void)
     cv::cuda::setDevice(0);
 }
 
-void MatcherOpenCVBlockCuda::setupDefaultMatcher(void)
+void MatcherOpenCVCSBPCuda::setupDefaultMatcher(void)
 {
-    matcher = cv::cuda::createStereoBM();
+    matcher = cv::cuda::createStereoConstantSpaceBP();
 }
 
-int MatcherOpenCVBlockCuda::forwardMatch()
+int MatcherOpenCVCSBPCuda::forwardMatch()
 {
     try
     {
@@ -52,7 +52,7 @@ int MatcherOpenCVBlockCuda::forwardMatch()
     }
 }
 
-int MatcherOpenCVBlockCuda::backwardMatch()
+int MatcherOpenCVCSBPCuda::backwardMatch()
 {
     auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
     cuda_left.upload(*left);
@@ -62,30 +62,20 @@ int MatcherOpenCVBlockCuda::backwardMatch()
     return 0;
 }
 
-void MatcherOpenCVBlockCuda::setDisparityRange(int disparity_range)
+void MatcherOpenCVCSBPCuda::setDisparityRange(int disparity_range)
 {
     disparity_range = disparity_range > 0 ? disparity_range : ((image_size.width / 8) + 15) & -16;
     matcher->setNumDisparities(disparity_range);
     this->disparity_range = disparity_range;
 }
 
-void MatcherOpenCVBlockCuda::setWindowSize(int window_size)
+void MatcherOpenCVCSBPCuda::setMinDisparity(int min_disparity)
 {
-    this->window_size = window_size;
-    matcher->setBlockSize(window_size);
+  matcher->setMinDisparity(min_disparity);
+  this->min_disparity = min_disparity;
 }
 
-void MatcherOpenCVBlockCuda::setTextureThreshold(int threshold)
-{
-    matcher->setTextureThreshold(threshold);
-}
-
-void MatcherOpenCVBlockCuda::setInterpolation(bool enable)
+void MatcherOpenCVCSBPCuda::setInterpolation(bool enable)
 {
     this->interpolate = enable;
-}
-
-void MatcherOpenCVBlockCuda::setPreFilterCap(int cap)
-{
-    matcher->setPreFilterCap(cap);
 }

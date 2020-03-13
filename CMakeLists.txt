@@ -80,9 +80,11 @@ if (WITH_I3DR_ALG)
 			src/stereoMatcher/abstractStereoMatcher.cpp 
 			src/stereoMatcher/matcherOpenCVBlock.cpp 
 			src/stereoMatcher/matcherOpenCVSGBM.cpp 
-			src/stereoMatcher/jrsgm.cpp 
-			src/stereoMatcher/matcherJRSGM.cpp 
+			src/stereoMatcher/I3DRSGM.cpp 
+			src/stereoMatcher/matcherI3DRSGM.cpp 
 			src/stereoMatcher/matcherOpenCVBlockCuda.cpp
+			src/stereoMatcher/matcherOpenCVBPCuda.cpp
+			src/stereoMatcher/matcherOpenCVCSBPCuda.cpp
 		)
 		target_link_libraries(
 			generate_disparity
@@ -99,8 +101,8 @@ if (WITH_I3DR_ALG)
 			src/stereoMatcher/abstractStereoMatcher.cpp 
 			src/stereoMatcher/matcherOpenCVBlock.cpp 
 			src/stereoMatcher/matcherOpenCVSGBM.cpp 
-			src/stereoMatcher/jrsgm.cpp 
-			src/stereoMatcher/matcherJRSGM.cpp 
+			src/stereoMatcher/I3DRSGM.cpp 
+			src/stereoMatcher/matcherI3DRSGM.cpp 
 		)
 		target_link_libraries(
 			generate_disparity
@@ -120,6 +122,8 @@ else (WITH_I3DR_ALG)
 			src/stereoMatcher/matcherOpenCVBlock.cpp 
 			src/stereoMatcher/matcherOpenCVSGBM.cpp
 			src/stereoMatcher/matcherOpenCVBlockCuda.cpp
+			src/stereoMatcher/matcherOpenCVBPCuda.cpp
+			src/stereoMatcher/matcherOpenCVCSBPCuda.cpp
 		)
 		target_link_libraries(
 			generate_disparity
