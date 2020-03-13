@@ -10,11 +10,11 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Boost REQUIRED COMPONENTS thread system)
 
 # Build with cuda: 'catkin_make -DWITH_CUDA=ON'
-# Enables OpenCV CUDA StereoBM
+# Enables OpenCV CUDA Stereo matchers
 # ROS package: 'vision_opencv' must be re-compiled with cuda enabled opencv library
 # Install OpenCV 3.3.1 with CUDA enabled (-DWITH_CUDA) to /usr/local
 # Source OpenCV install location after sourcing ros (add this to ~/.bashrc):
-	# source source /opt/ros/kinetic/setup.bash
+	# source /opt/ros/kinetic/setup.bash
 	# export CMAKE_PREFIX_PATH=/usr/local:$CMAKE_PREFIX_PATH
 	# export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 option(WITH_CUDA "Use OpenCV CUDA Libraries" OFF)
