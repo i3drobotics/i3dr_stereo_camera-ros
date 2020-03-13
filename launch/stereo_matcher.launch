@@ -20,7 +20,9 @@
   <!-- algorithm 0: OpenCV Block -->
   <!-- algorithm 1: OpenCV SGBM -->
   <!-- algorithm 2: I3DR SGM -->
+  <!-- algorithm 2: OpenCV Block CUDA -->
   <arg name="stereo_algorithm" default="0" />
+  <!-- OpenCV Block -->
   <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" default="147" />
   <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" default="480" />
   <arg if="$(eval stereo_algorithm == 0)" name="correlation_window_size" default="21" />
@@ -35,6 +37,7 @@
   <!-- Not used in OpenCV Block -->
   <arg if="$(eval stereo_algorithm == 0)" name="texture_threshold" default="10" />
 
+  <!-- OpenCV SGBM -->
   <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" default="147" />
   <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" default="480" />
   <arg if="$(eval stereo_algorithm == 1)" name="correlation_window_size" default="21" />
@@ -48,6 +51,7 @@
   <arg if="$(eval stereo_algorithm == 1)" name="p2" default="400"/>
   <arg if="$(eval stereo_algorithm == 1)" name="interp" default="false"/>
 
+  <!-- I3DR SGM -->
   <arg if="$(eval stereo_algorithm == 2)" name="min_disparity" default="400" />
   <arg if="$(eval stereo_algorithm == 2)" name="disparity_range" default="528" />
   <arg if="$(eval stereo_algorithm == 2)" name="correlation_window_size" default="13" />
@@ -57,11 +61,25 @@
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_range" default="5" />
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_size" default="1000" />
   <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="5" />
-  
-  <!-- Not used in JR SGM -->
+  <!-- Not used in I3DR SGM -->
   <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="2" />
   <arg if="$(eval stereo_algorithm == 2)" name="texture_threshold" default="10" />
   <arg if="$(eval stereo_algorithm == 2)" name="prefilter_size" default="147" />
+
+  <!-- OpenCV Block CUDA -->
+  <arg if="$(eval stereo_algorithm == 3)" name="disparity_range" default="480" />
+  <arg if="$(eval stereo_algorithm == 3)" name="correlation_window_size" default="21" />
+  <arg if="$(eval stereo_algorithm == 3)" name="texture_threshold" default="10" />
+  <arg if="$(eval stereo_algorithm == 3)" name="prefilter_cap" default="7" />
+  <arg if="$(eval stereo_algorithm == 3)" name="interp" default="false"/>
+  <!-- Not used in OpenCV Block CUDA -->
+  <arg if="$(eval stereo_algorithm == 3)" name="min_disparity" default="147" />
+  <arg if="$(eval stereo_algorithm == 3)" name="uniqueness_ratio" default="2" />
+  <arg if="$(eval stereo_algorithm == 3)" name="speckle_range" default="4" />
+  <arg if="$(eval stereo_algorithm == 3)" name="speckle_size" default="1000" />
+  <arg if="$(eval stereo_algorithm == 3)" name="p1" default="200"/>
+  <arg if="$(eval stereo_algorithm == 3)" name="p2" default="400"/>
+  <arg if="$(eval stereo_algorithm == 3)" name="prefilter_size" default="147" />
 
   <arg name="depth_max" default="10" />
   <arg name="depth_min" default="0" />

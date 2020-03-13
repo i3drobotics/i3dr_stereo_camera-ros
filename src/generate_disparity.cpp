@@ -39,6 +39,10 @@
 #include <stereoMatcher/matcherOpenCVBlock.h>
 #include <stereoMatcher/matcherOpenCVSGBM.h>
 
+#ifdef WITH_CUDA
+#include <stereoMatcher/matcherOpenCVBlockCuda.h>
+#endif
+
 #ifdef WITH_I3DR_ALG
 #include <stereoMatcher/matcherJRSGM.h>
 #endif
@@ -69,6 +73,9 @@ typedef message_filters::sync_policies::ApproximateTime<
 AbstractStereoMatcher *matcher = nullptr;
 MatcherOpenCVBlock *block_matcher;
 MatcherOpenCVSGBM *sgbm_matcher;
+#ifdef WITH_CUDA
+MatcherOpenCVBlockCuda *block_cuda_matcher;
+#endif
 #ifdef WITH_I3DR_ALG
 MatcherJRSGM *jrsgm_matcher;
 #endif
@@ -78,9 +85,11 @@ float _depth_min = 0;
 
 bool isFirstImagesRecevied = false;
 
+//TODO remove algorithm options if not available
 int CV_StereoBM = 0;
 int CV_StereoSGBM = 1;
 int JR_StereoSGM = 2;
+int CV_StereoBMCuda = 3;
 ros::Publisher _disparity_pub, _rect_l_pub, _rect_r_pub;
 std::string _frame_id;
 int _stereo_algorithm = CV_StereoBM;
@@ -333,39 +342,6 @@ void updateMatcher()
   //bool occlusion = false;
   //matcher->setOcclusionDetection(_interp);
 
-  /*
-
-  if (_stereo_algorithm == CV_StereoBM || _stereo_algorithm == CV_StereoSGBM)
-  {
-    //Functions unique to OpenCV Stereo BM & SGBM
-    matcher->setUniquenessRatio(_uniqueness_ratio);
-    matcher->setSpeckleFilterRange(_speckle_range);
-    matcher->setSpeckleFilterWindow(_speckle_size);
-    matcher->setPreFilterCap(_preFilterCap);
-  }
-  if (_stereo_algorithm == JR_StereoSGM || _stereo_algorithm == CV_StereoBM)
-  {
-    //Functions unique to OpenCV Stereo SGBM and I3DR SGM
-    matcher->setP1(_p1);
-    matcher->setP2(_p2);
-  }
-
-  if (_stereo_algorithm == CV_StereoBM)
-  {
-    //Functions unique to OpenCV Stereo BM
-    matcher->setTextureThreshold(_texture_threshold);
-    matcher->setPreFilterSize(_preFilterSize);
-  }
-  if (_stereo_algorithm == CV_StereoSGBM)
-  {
-    //Functions unique to OpenCV Stereo SGBM
-  }
-  if (_stereo_algorithm == JR_StereoSGM)
-  {
-    bool occlusion = false;
-    matcher->setOcclusionDetection(occlusion);
-  }
-  */
   std::cout << "Matcher parameters updated." << std::endl;
 }
 
@@ -376,6 +352,9 @@ void init_matcher(cv::Size image_size)
 
   block_matcher = new MatcherOpenCVBlock(empty_str, image_size);
   sgbm_matcher = new MatcherOpenCVSGBM(empty_str, image_size);
+#ifdef WITH_CUDA
+  block_cuda_matcher = new MatcherOpenCVBlockCuda(empty_str, image_size);
+#endif
 #ifdef WITH_I3DR_ALG
   jrsgm_matcher = new MatcherJRSGM(_jr_config_file, image_size);
 #endif
@@ -397,6 +376,15 @@ void init_matcher(cv::Size image_size)
     _stereo_algorithm = CV_StereoBM;
     ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
 #endif
+  }
+  else if (_stereo_algorithm == CV_StereoBMCuda){
+    #ifdef WITH_CUDA
+    matcher = block_cuda_matcher;
+    #else
+    matcher = block_matcher;
+    _stereo_algorithm = CV_StereoBM;
+    ROS_ERROR("Not built to use OpenCV CUDA Matchers. Resetting to block matcher.");
+    #endif
   }
   std::cout << "Matcher initalised." << std::endl;
 
@@ -894,7 +882,7 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     config.prefilter_size |= 0x1; // must be odd
     _preFilterCap = config.prefilter_cap;
     _preFilterSize = config.prefilter_size;
-    if (config.stereo_algorithm == CV_StereoBM || config.stereo_algorithm == CV_StereoSGBM)
+    if (config.stereo_algorithm == CV_StereoBM || config.stereo_algorithm == CV_StereoSGBM || config.stereo_algorithm == CV_StereoBMCuda)
     {
       config.correlation_window_size |= 0x1;                       //must be odd
       config.disparity_range = (config.disparity_range / 16) * 16; // must be multiple of 16
@@ -920,6 +908,16 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
       ROS_ERROR("Not built to use I3DR algorithm. Resetting to block matcher.");
 #endif
     }
+    else if (_stereo_algorithm == CV_StereoBMCuda){
+    #ifdef WITH_CUDA
+    matcher = block_cuda_matcher;
+    #else
+    matcher = block_matcher;
+    _stereo_algorithm = CV_StereoBM;
+    config.stereo_algorithm = CV_StereoBM;
+    ROS_ERROR("Not built to use OpenCV CUDA Matchers. Resetting to block matcher.");
+    #endif
+  }
 
     _correlation_window_size = config.correlation_window_size;
     _min_disparity = config.min_disparity;

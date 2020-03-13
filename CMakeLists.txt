@@ -54,7 +54,7 @@ generate_messages(
   DEPENDENCIES
   std_msgs
 )
- 
+
 generate_dynamic_reconfigure_options(
 	cfg/i3DR_Disparity.cfg
 	cfg/i3DR_pointCloud.cfg
@@ -65,7 +65,6 @@ catkin_package(
     INCLUDE_DIRS include
 	CATKIN_DEPENDS roscpp nodelet std_msgs sensor_msgs message_runtime
 	LIBRARIES ${PROJECT_NAME}
-#  DEPENDS system_lib
 )
 
 link_directories(
@@ -75,29 +74,76 @@ link_directories(
 add_definitions(${PCL_DEFINITIONS})
 
 if (WITH_I3DR_ALG)
-	add_executable(
-		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp src/stereoMatcher/jrsgm.cpp src/stereoMatcher/matcherJRSGM.cpp 
-	)
-	target_link_libraries(
-		generate_disparity
-		${Phobos_LIBRARIES}
-		${catkin_LIBRARIES}
-		${OpenCV_LIBRARIES}
-		${PCL_LIBRARIES}
-		cudaMem
-	)
+	if (WITH_CUDA)
+		add_executable(
+			generate_disparity src/generate_disparity.cpp 
+			src/stereoMatcher/abstractStereoMatcher.cpp 
+			src/stereoMatcher/matcherOpenCVBlock.cpp 
+			src/stereoMatcher/matcherOpenCVSGBM.cpp 
+			src/stereoMatcher/jrsgm.cpp 
+			src/stereoMatcher/matcherJRSGM.cpp 
+			src/stereoMatcher/matcherOpenCVBlockCuda.cpp
+		)
+		target_link_libraries(
+			generate_disparity
+			${Phobos_LIBRARIES}
+			${catkin_LIBRARIES}
+			${OpenCV_LIBRARIES}
+			${PCL_LIBRARIES}
+			cudaMem
+		)
+	else (WITH_CUDA)
+		message(WARNING "Not using CUDA. Will not be able to generate disparity with StereoBMCuda (3)")
+		add_executable(
+			generate_disparity src/generate_disparity.cpp 
+			src/stereoMatcher/abstractStereoMatcher.cpp 
+			src/stereoMatcher/matcherOpenCVBlock.cpp 
+			src/stereoMatcher/matcherOpenCVSGBM.cpp 
+			src/stereoMatcher/jrsgm.cpp 
+			src/stereoMatcher/matcherJRSGM.cpp 
+		)
+		target_link_libraries(
+			generate_disparity
+			${Phobos_LIBRARIES}
+			${catkin_LIBRARIES}
+			${OpenCV_LIBRARIES}
+			${PCL_LIBRARIES}
+			cudaMem
+		)	
+	endif()
 else (WITH_I3DR_ALG)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
-	add_executable(
-		generate_disparity src/generate_disparity.cpp src/stereoMatcher/abstractStereoMatcher.cpp src/stereoMatcher/matcherOpenCVBlock.cpp src/stereoMatcher/matcherOpenCVSGBM.cpp
-	)
-	target_link_libraries(
-		generate_disparity
-		${Phobos_LIBRARIES}
-		${catkin_LIBRARIES}
-		${OpenCV_LIBRARIES}
-		${PCL_LIBRARIES}
-	)
+	if (WITH_CUDA)
+		add_executable(
+			generate_disparity src/generate_disparity.cpp 
+			src/stereoMatcher/abstractStereoMatcher.cpp 
+			src/stereoMatcher/matcherOpenCVBlock.cpp 
+			src/stereoMatcher/matcherOpenCVSGBM.cpp
+			src/stereoMatcher/matcherOpenCVBlockCuda.cpp
+		)
+		target_link_libraries(
+			generate_disparity
+			${Phobos_LIBRARIES}
+			${catkin_LIBRARIES}
+			${OpenCV_LIBRARIES}
+			${PCL_LIBRARIES}
+		)
+	else (WITH_CUDA)
+		message(WARNING "Not using CUDA. Will not be able to generate disparity with StereoBMCuda (3)")
+		add_executable(
+			generate_disparity src/generate_disparity.cpp 
+			src/stereoMatcher/abstractStereoMatcher.cpp 
+			src/stereoMatcher/matcherOpenCVBlock.cpp 
+			src/stereoMatcher/matcherOpenCVSGBM.cpp
+		)
+		target_link_libraries(
+			generate_disparity
+			${Phobos_LIBRARIES}
+			${catkin_LIBRARIES}
+			${OpenCV_LIBRARIES}
+			${PCL_LIBRARIES}
+		)	
+	endif()
 endif()
 
 add_executable(
