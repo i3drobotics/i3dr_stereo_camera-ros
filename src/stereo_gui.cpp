@@ -72,15 +72,8 @@ void updateGUIImage(const sensor_msgs::ImageConstPtr &msg_image, QGraphicsScene 
 void updateGUIDepthImage(const sensor_msgs::ImageConstPtr &msg_image, QGraphicsScene *gs){
     cv::Mat image;
     image = cv_bridge::toCvCopy(msg_image,sensor_msgs::image_encodings::TYPE_32FC1)->image;
-    /*
-    cv::Mat image_uchar;
-    image.convertTo(image_uchar, CV_8UC1);
-    */
-    cv::Mat image_uchar_scaled;
-    image.convertTo(image_uchar_scaled, CV_8UC1, 255, 0); 
-    cv::Mat image_bgr;
-    cvtColor(image_uchar_scaled, image_bgr, CV_GRAY2BGR);
-    stereoGUI->updateImage(image_bgr,gs);
+    cv::normalize(image, image, 1, 0, NORM_MINMAX);
+    stereoGUI->updateDepthImage(image,gs);
 }
 
 void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs::ImageConstPtr &msg_right_image, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)

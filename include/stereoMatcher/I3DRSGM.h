@@ -48,6 +48,9 @@ class I3DRSGM {
         bool getSubpixel(void){return params.oFinalSubPixelParameters.bCompute; }
         int getDisparityShift(void){return params.fTopPredictionShift * pow(2, params.nNumberOfPyramids-1) ; }
 
+        void setNoDataValue(int val);
+        void enableCPU(bool enable);
+
         int compute(cv::Mat &disp);
         int backwardMatch(cv::Mat &disp);
 

@@ -300,6 +300,40 @@ int I3DRSGM::backwardMatch(cv::Mat &disp)
   return 0;
 }
 
+void I3DRSGM::enableCPU(bool enable){
+  
+  std::string param_val;
+  if (enable)
+  {
+    param_val = "true";
+  }
+  else
+  {
+    param_val = "false";
+  }
+
+  std::string param_name = "Use CPU SGM";
+
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
+  {
+    EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
+  }
+  EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
+  createMatcher();
+}
+
+
+void I3DRSGM::setNoDataValue(int val){
+  std::string param_name = "DSI Nodata Value";
+  std::string param_val = std::to_string(-val); //value is inverted in algorithm to make it apear behind camera (to be ignored)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
+  {
+    EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
+  }
+  EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
+  createMatcher();
+}
+
 void I3DRSGM::setSpeckleDifference(float diff)
 {
   std::cout << "Speckle difference: " << diff << std::endl;
@@ -310,16 +344,13 @@ void I3DRSGM::setSpeckleDifference(float diff)
     pyramid.fSpeckleMaxDiff = diff;
   }
   */
-  int i = 0;
   std::string param_name = "Disparity Speckle Filter Max Difference";
   std::string param_val = std::to_string(diff);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
-  createMatcher();
   createMatcher();
 }
 
@@ -333,13 +364,11 @@ void I3DRSGM::setSpeckleSize(int size)
     pyramid.iSpeckleMaxSize = size;
   }
   */
-  int i = 0;
   std::string param_name = "Disparity Speckle Filter Max Region Size";
   std::string param_val = std::to_string(size);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
   createMatcher();
@@ -358,19 +387,17 @@ void I3DRSGM::setP1(float P1)
     pyramid.oSGMParams.fP1_S_N = P1_scaled;
   }
   */
-  int i = 0;
   std::string param_name_1 = "SE-NW Penalty 1";
   std::string param_name_2 = "SN Penalty 1";
   std::string param_name_3 = "SW-NE Penalty 1";
   std::string param_name_4 = "WE Penalty 1";
   std::string param_val = std::to_string(P1_scaled);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name_1, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_2, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_3, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_4, param_val);
-    i++;
   }
   std::string param_subpix_val = std::to_string(P1_subpix);
   EditPyramidParamRaw(&this->params_raw, 0, param_name_1, param_subpix_val, true);
@@ -394,19 +421,17 @@ void I3DRSGM::setP2(float P2)
   }
   */
 
-  int i = 0;
   std::string param_name_1 = "SE-NW Penalty 2";
   std::string param_name_2 = "SN Penalty 2";
   std::string param_name_3 = "SW-NE Penalty 2";
   std::string param_name_4 = "WE Penalty 2";
   std::string param_val = std::to_string(P2_scaled);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name_1, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_2, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_3, param_val);
     EditPyramidParamRaw(&this->params_raw, i, param_name_4, param_val);
-    i++;
   }
   std::string param_subpix_val = std::to_string(P2_subpix);
   EditPyramidParamRaw(&this->params_raw, 0, param_name_1, param_subpix_val, true);
@@ -434,15 +459,13 @@ void I3DRSGM::setWindowSize(int census_size)
   //params.oPyramidParams[0].oMetricParams.nWindowSizeY = census_size;
   */
 
-  int i = 0;
   std::string x_param_name = "Feature Set Size X";
   std::string y_param_name = "Feature Set Size Y";
   std::string param_val = std::to_string(census_size);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, x_param_name, param_val);
     EditPyramidParamRaw(&this->params_raw, i, y_param_name, param_val);
-    i++;
   }
   createMatcher();
 }
@@ -469,16 +492,15 @@ void I3DRSGM::maxPyramid(int pyramid_num){
 
   bool include_subpix = false;
 
-  if (pyramid_num > params.oPyramidParams.size()){
-    if (pyramid_num >= params.oPyramidParams.size() + 1){ //enable subpixel if pyramid number is 1+ number of pyramids available
+  if (pyramid_num > params.nNumberOfPyramids){
+    if (pyramid_num >= params.nNumberOfPyramids + 1){ //enable subpixel if pyramid number is 1+ number of pyramids available
       include_subpix = true;
     }
-    pyramid_num = params.oPyramidParams.size();
+    pyramid_num = params.nNumberOfPyramids;
   }
 
-  int i = 0;
-  int j = params.oPyramidParams.size() - 1;
-  for (auto &pyramid : params.oPyramidParams)
+  int j = params.nNumberOfPyramids - 1;
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     if (i < pyramid_num){
       EditPyramidParamRaw(&this->params_raw, j, param_name, param_val_true);
@@ -487,7 +509,6 @@ void I3DRSGM::maxPyramid(int pyramid_num){
       EditPyramidParamRaw(&this->params_raw, j, param_name, param_val_false);
     }
     std::cerr << "i: " << i << " j: " << j << std::endl;
-    i++;
     j--;
   }
   if (include_subpix){
@@ -545,13 +566,11 @@ void I3DRSGM::setDisparityRange(int n)
     disparity_range++;
   }
   /* Set disparity range for all pyramids */
-  int i = 0;
   std::string param_name = "Number Of Disparities";
   std::string param_val = std::to_string(disparity_range);
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
   createMatcher();
@@ -579,15 +598,11 @@ void I3DRSGM::enableTextureDSI(bool enable)
 
   std::string param_name = "Use DSI  Texture Memory";
 
-  int i = 0;
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
-  createMatcher();
-
   createMatcher();
 }
 
@@ -609,11 +624,9 @@ void I3DRSGM::enableInterpolation(bool enable)
 
   std::string param_name = "Interpolate Disparity";
 
-  int i = 0;
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
   createMatcher();
@@ -644,11 +657,9 @@ void I3DRSGM::enableOcclusionDetection(bool enable)
 
   std::string param_name = "Occlusion Detection";
 
-  int i = 0;
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
   createMatcher();
@@ -679,11 +690,9 @@ void I3DRSGM::enableOccInterpol(bool enable)
 
   std::string param_name = "Interpolate Occlusions";
 
-  int i = 0;
-  for (auto &pyramid : params.oPyramidParams)
+  for (int i = 0; i <= params.nNumberOfPyramids; i++)
   {
     EditPyramidParamRaw(&this->params_raw, i, param_name, param_val);
-    i++;
   }
   EditPyramidParamRaw(&this->params_raw, 0, param_name, param_val, true);
   createMatcher();

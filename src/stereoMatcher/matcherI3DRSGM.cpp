@@ -16,6 +16,12 @@ void MatcherI3DRSGM::setupDefaultMatcher(void)
     //matcher->enableTextureDSI(false);
     //matcher->enableSubpixel(true);
     //matcher->maxPyramid(4);
+    matcher->setNoDataValue(-10000);
+#ifdef WITH_CUDA
+    matcher->enableCPU(false);
+#else
+    matcher->enableCPU(true);
+#endif
 }
 
 int MatcherI3DRSGM::forwardMatch()

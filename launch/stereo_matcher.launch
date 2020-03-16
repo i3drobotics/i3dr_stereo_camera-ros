@@ -61,7 +61,7 @@
   <arg if="$(eval stereo_algorithm == 2)" name="interp" default="false"/>
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_range" default="5" />
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_size" default="1000" />
-  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="5" />
+  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="4" />
   <!-- Not used in I3DR SGM -->
   <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="2" />
   <arg if="$(eval stereo_algorithm == 2)" name="texture_threshold" default="10" />

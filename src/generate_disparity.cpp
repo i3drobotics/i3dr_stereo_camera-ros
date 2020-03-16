@@ -459,9 +459,14 @@ Mat stereo_match(Mat left_image, Mat right_image)
 
 void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
 {
+  double min, max; 
+  cv::minMaxLoc(disparity, &min, &max);
+
   stereo_msgs::DisparityImage disp_msg;
-  disp_msg.min_disparity = min_disparity;
-  disp_msg.max_disparity = min_disparity + disparity_range - 1;
+  //disp_msg.min_disparity = min_disparity;
+  //disp_msg.max_disparity = min_disparity + disparity_range - 1;
+  disp_msg.min_disparity = min;
+  disp_msg.max_disparity = max;
 
   cv::Mat Kl, Dl, Rl, Pl;
   cv::Mat Kr, Dr, Rr, Pr;
@@ -562,17 +567,6 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
     ROS_ERROR("Match unsuccessful. Disparity map is empty!");
     return -1;
   }
-  /*
-  for(int i = 0; i < disparity16_.rows; i++)
-  {
-    for(int j = 0; j < disparity16_.cols; j++){
-      float val = disparity16_.at<float>(i,j);
-      if (val >= model.left().fx()){
-        disparity16_.at<float>(i,j) = model.MISSING_Z;
-      }
-    }
-  }
-  */
   std::cout << "[generate_disparity] Formatting disparity for publishing" << std::endl;
   // Fill in DisparityImage image data, converting to 32-bit float
   sensor_msgs::Image &dimage = disparity.image;
@@ -597,10 +591,11 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
 
   /// @todo Window of (potentially) valid disparities
 
-  // Disparity search range
-  disparity.min_disparity = _min_disparity;
-  //disparity.max_disparity = disparity.f * (disparity.T/_depth_max);
-  disparity.max_disparity = _min_disparity + _disparity_range - 1;
+  disparity.min_disparity = disparity.T * disparity.f / _depth_max;
+  disparity.max_disparity = disparity.T * disparity.f / _depth_min;
+  dmat.setTo(model.MISSING_Z, dmat < disparity.min_disparity);
+  dmat.setTo(model.MISSING_Z, dmat > disparity.max_disparity);
+
   disparity.delta_d = inv_dpp;
   return 0;
 }
@@ -659,7 +654,7 @@ cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l)
   double fy = m_l.at<double>(1, 1);
 
   double p14 = p_r.at<double>(0, 3);
-  double T = -p14 / fx;
+  double T = p14 / fx;
   double q33 = -(cx - cxr) / T;
 
   q.at<double>(0, 0) = 1.0;
@@ -764,17 +759,9 @@ void pointCloudCb(const stereo_msgs::DisparityImageConstPtr &msg_disp,
       if (isValidPoint(mat(v, u)))
       {
         // x,y,z
-        float z = mat(v, u)[2];
-        if (z < _depth_max && z > _depth_min)
-        {
-          *iter_x = mat(v, u)[0];
-          *iter_y = mat(v, u)[1];
-          *iter_z = mat(v, u)[2];
-        }
-        else
-        {
-          *iter_x = *iter_y = *iter_z = bad_point;
-        }
+        *iter_x = mat(v, u)[0];
+        *iter_y = mat(v, u)[1];
+        *iter_z = mat(v, u)[2];
       }
       else
       {
