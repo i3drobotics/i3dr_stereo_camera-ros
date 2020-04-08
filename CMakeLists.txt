@@ -197,6 +197,16 @@ target_link_libraries(
 	disparity_to_depth
 	${catkin_LIBRARIES}
 	${OpenCV_LIBRARIES}
+	${PCL_LIBRARIES}
+)
+
+add_executable(
+	crop_image_by_disparity src/crop_image_by_disparity.cpp
+)
+target_link_libraries(
+	crop_image_by_disparity
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
 )
 
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

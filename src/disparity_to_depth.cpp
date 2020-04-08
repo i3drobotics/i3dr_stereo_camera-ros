@@ -38,13 +38,23 @@ MODIFIED BY: Ben Knight (I3D Robotics)
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/io/ply_io.h>
+
 #include <cv_bridge/cv_bridge.h>
 
-image_transport::Publisher pub32f_;
+image_transport::Publisher _depth_pub;
+ros::Publisher _point_cloud_pub;
 
 typedef message_filters::sync_policies::ApproximateTime<
-	stereo_msgs::DisparityImage, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
+	stereo_msgs::DisparityImage, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
 	policy_t;
+
+typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloudRGB;
+
 
 cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l)
 {
@@ -79,7 +89,7 @@ void cameraInfo_to_KDRP(const sensor_msgs::CameraInfoConstPtr &msg_camera_info, 
 	P = cv::Mat(3, 4, CV_64FC1, (void *)msg_camera_info->P.data());
 }
 
-sensor_msgs::Image dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sensor_msgs::CameraInfoConstPtr &camLInfoMsg, const sensor_msgs::CameraInfoConstPtr &camRInfoMsg)
+void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sensor_msgs::ImageConstPtr &camImage, const sensor_msgs::CameraInfoConstPtr &camLInfoMsg, const sensor_msgs::CameraInfoConstPtr &camRInfoMsg)
 {
 
 	cv::Mat Kl, Dl, Rl, Pl;
@@ -94,55 +104,97 @@ sensor_msgs::Image dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPt
 
 	// sensor_msgs::image_encodings::TYPE_32FC1
 	cv::Mat disparity(disparityMsg->image.height, disparityMsg->image.width, CV_32FC1, const_cast<uchar *>(disparityMsg->image.data.data()));
+	cv::Mat image(camImage->height, camImage->width, CV_8UC1, const_cast<uchar *>(camImage->data.data()));
+
+	PointCloudRGB::Ptr ptCloudTemp(new PointCloudRGB);
 
 	cv::Mat depth32f;
 	depth32f = cv::Mat::zeros(disparity.rows, disparity.cols, CV_32F);
 	float disp_min_val = disparityMsg->min_disparity;
 	float disp_max_val = disparityMsg->max_disparity;
 
+	sensor_msgs::PointCloud2Ptr points_msg = boost::make_shared<sensor_msgs::PointCloud2>();
+	points_msg->header = disparityMsg->header;
+	points_msg->height = disparityMsg->image.height;
+	points_msg->width = disparityMsg->image.width;
+	points_msg->is_bigendian = false;
+	points_msg->is_dense = false; // there may be invalid points
+
+	sensor_msgs::PointCloud2Modifier pcd_modifier(*points_msg);
+  	pcd_modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
+
+	sensor_msgs::PointCloud2Iterator<float> iter_x(*points_msg, "x");
+	sensor_msgs::PointCloud2Iterator<float> iter_y(*points_msg, "y");
+	sensor_msgs::PointCloud2Iterator<float> iter_z(*points_msg, "z");
+	sensor_msgs::PointCloud2Iterator<uchar> iter_r(*points_msg, "r");
+	sensor_msgs::PointCloud2Iterator<uchar> iter_g(*points_msg, "g");
+	sensor_msgs::PointCloud2Iterator<uchar> iter_b(*points_msg, "b");
+
+	float max_d = 0;
+
 	for (int i = 0; i < disparity.rows; i++)
 	{
-		for (int j = 0; j < disparity.cols; j++)
+		for (int j = 0; j < disparity.cols; j++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
 		{
 			float d = disparity.at<float>(i, j);
 
-			if (d != 10000){
+			if (d < 10000){
 
-				float x = j - (disparityMsg->image.height/2);
-				float y = i - (disparityMsg->image.width/2);
+				if (d > max_d){
+					max_d = d;
+				}
 
-				cv::Vec4d homg_pt = _Q * cv::Vec4d((double)x, (double)y, (double)d, 1.0);
+				//float x_index = j - (disparityMsg->image.height/2);
+				//float y_index = i - (disparityMsg->image.width/2);
+				float x_index = j;
+				float y_index = i;
 
-				float depth = (float)homg_pt[2] / (float)homg_pt[3];
+				cv::Vec4d homg_pt = _Q * cv::Vec4d((double)x_index, (double)y_index, (double)d, 1.0);
 
-				depth32f.at<float>(i, j) = depth;
+				float x = (float)homg_pt[0] / (float)homg_pt[3];
+				float y = (float)homg_pt[1] / (float)homg_pt[3];
+				float z = (float)homg_pt[2] / (float)homg_pt[3];
+
+				depth32f.at<float>(i, j) = z;
+
+				uchar intensity = image.at<uchar>(i,j);
+
+				*iter_x = x;
+        		*iter_y = y;
+        		*iter_z = z;
+				*iter_r = intensity;
+        		*iter_g = intensity;
+        		*iter_b = intensity;
 			}
 		}
 	}
+
+	std::cerr << "max d: " << max_d << std::endl;
 
 	// convert to ROS sensor_msg::Image
 	cv_bridge::CvImage cvDepth(disparityMsg->header, sensor_msgs::image_encodings::TYPE_32FC1, depth32f);
 	sensor_msgs::Image depthMsg;
 	cvDepth.toImageMsg(depthMsg);
-	return (depthMsg);
+
+	_depth_pub.publish(depthMsg);
+	_point_cloud_pub.publish(points_msg);
 }
 
-void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sensor_msgs::CameraInfoConstPtr &camLInfoMsg, const sensor_msgs::CameraInfoConstPtr &camRInfoMsg)
+void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sensor_msgs::ImageConstPtr &camImage, const sensor_msgs::CameraInfoConstPtr &camLInfoMsg, const sensor_msgs::CameraInfoConstPtr &camRInfoMsg)
 {
 	if (disparityMsg->image.encoding.compare(sensor_msgs::image_encodings::TYPE_32FC1) != 0)
 	{
 		ROS_ERROR("Input type must be disparity=32FC1");
 		return;
 	}
-
-	bool publish32f = pub32f_.getNumSubscribers();
-
-	if (publish32f)
+	if (camImage->encoding.compare(sensor_msgs::image_encodings::MONO8) != 0)
 	{
-		sensor_msgs::Image depthMsg = dispInfoMsg2depthMsg(disparityMsg, camLInfoMsg, camRInfoMsg);
-		//publish the message
-		pub32f_.publish(depthMsg);
+		ROS_ERROR("Input type must be image=MONO8");
+        ROS_ERROR("Input type is: %s",camImage->encoding.c_str());
+		return;
 	}
+	
+	dispInfoMsg2depthMsg(disparityMsg, camImage, camLInfoMsg, camRInfoMsg);
 }
 
 int main(int argc, char **argv)
@@ -154,14 +206,16 @@ int main(int argc, char **argv)
 	std::string ns = ros::this_node::getNamespace();
 
 	message_filters::Subscriber<stereo_msgs::DisparityImage> sub_disp(nh, ns + "/disparity", 1);
+	message_filters::Subscriber<sensor_msgs::Image> sub_img(nh, ns + "/left/image_rect", 1);
 	message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_l(nh, ns + "/left/camera_info", 1);
 	message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_r(nh, ns + "/right/camera_info", 1);
 
-	message_filters::Synchronizer<policy_t> sync(policy_t(10), sub_disp, sub_camera_info_l, sub_camera_info_r);
-	sync.registerCallback(boost::bind(&callback, _1, _2, _3));
+	message_filters::Synchronizer<policy_t> sync(policy_t(20), sub_disp, sub_img, sub_camera_info_l, sub_camera_info_r);
+	sync.registerCallback(boost::bind(&callback, _1, _2, _3, _4));
 
 	image_transport::ImageTransport it(nh);
-	pub32f_ = it.advertise("depth", 1);
+	_depth_pub = it.advertise(ns + "/depth", 1);
+	_point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2_b", 1);
 
 	ros::spin();
 }

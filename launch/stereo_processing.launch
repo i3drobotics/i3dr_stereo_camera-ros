@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!--XML-->
+<launch>
+    <!-- SETUP ARGUMENTS -->
+    <!-- phobos / phobos_nuclear -->
+    <arg name="camera_model" default="phobos_nuclear"/>
+    <!-- algorithm 0: OpenCV block -->
+    <!-- algorithm 1: OpenCV SGBM -->
+    <!-- algorithm 2: I3DR SGM -->
+    <arg name="stereo_algorithm" default="2" />
+    <!-- enable/disable rviz -->
+    <arg name="rviz" default="false" />
+    <!-- enable/disable calibration -->
+    <arg name="calibrate" default="false"/>
+    <!-- is camera with split laser functionality being used -->
+    <arg name="split_laser" default="false"/>
+    <!-- enable/disbale stereo matching (3D generation) -->
+    <arg name="stereo_match" default="true"/>
+    <!-- namespace for camera -->
+    <arg name="camera_namespace" default="i3dr_phobos"/>
+    <arg name="imu" default="true"/>
+    <arg name="map" default="true" />
+    <arg name="glue" default="false" />
+    <arg name="depth_max" default="10" />
+    <arg name="gui" default="false" />
+    <arg name="cropByDisp" default="false" />
+
+    <!-- Use full res camera model mesh (slower) -->
+    <arg name="camera_mesh" default="false" />
+
+    <arg name="urdf_namespace" default="$(arg camera_namespace)"/>
+
+    <!-- STEREO CALIBRATION -->
+    <include if="$(arg calibrate)" file="$(find i3dr_stereo_camera)/launch/stereo_calibration.launch">
+        <arg name="split_laser" value="$(arg split_laser)"/>
+        <arg name="camera_namespace" value="$(arg camera_namespace)"/>
+        <arg name="multi_board" value="false" />
+        <arg name="grid_rows" value="8" />
+    </include>
+
+    <!-- STEREO MATCHER -->
+    <include if="$(arg stereo_match)" file="$(find i3dr_stereo_camera)/launch/stereo_matcher.launch">
+        <arg name="use_i3dr_matcher" value="true"/>
+
+        <!-- Matcher Parameters -->
+        <!-- see link below for details on matcher parameters -->
+        <!-- http://wiki.ros.org/stereo_image_proc/Tutorials/ChoosingGoodStereoParameters -->
+        <!-- algorithm 0: OpenCV block -->
+        <!-- algorithm 1: OpenCV SGBM -->
+        <!-- algorithm 2: I3DR SGM -->
+        <arg name="stereo_algorithm" value="$(arg stereo_algorithm)" />
+
+        <!-- maximum depth value (m) -->
+        <arg name="depth_max" value="$(arg depth_max)" />
+        <!-- TODO fix issue with i3dr alg giving extra 3D close to the camera -->
+        <arg name="depth_min" value="0.4" />
+
+        <arg name="split_laser" value="$(arg split_laser)"/>
+        <arg name="camera_namespace" value="$(arg camera_namespace)"/>
+        <arg name="frame_id" value="$(arg urdf_namespace)_depth_optical_frame" />
+
+        <arg if="$(eval stereo_algorithm == 0)" name="min_disparity" value="0" />
+        <arg if="$(eval stereo_algorithm == 0)" name="disparity_range" value="752" />
+        <arg if="$(eval stereo_algorithm == 1)" name="min_disparity" value="0" />
+        <arg if="$(eval stereo_algorithm == 1)" name="disparity_range" value="752" />
+        <arg if="$(eval stereo_algorithm == 2)" name="min_disparity" value="0" />
+        <arg if="$(eval stereo_algorithm == 2)" name="disparity_range" value="530" />
+        <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" value="6" />
+        <arg if="$(eval stereo_algorithm == 2)" name="interp" value="true"/>
+    </include>
+
+    <group unless="$(eval arg('split_laser'))">
+        <arg if="$(eval arg('cropByDisp'))" name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect_disp_cropped"/>
+        <arg unless="$(eval arg('cropByDisp'))" name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect"/>
+    </group>
+    <group if="$(eval arg('split_laser'))">
+        <arg if="$(eval arg('cropByDisp'))" name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect_no_laser_disp_cropped"/>
+        <arg unless="$(eval arg('cropByDisp'))" name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect_no_laser"/>
+    </group>
+
+    <arg name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect"/>
+
+    <group if="$(arg map)">
+        <arg name="map_frame_id" default="scan" />
+        <arg name="map_resolution" default="0.01"/>
+        <include if="$(arg map)" file="$(find i3dr_rtabmap)/launch/standalone_rtabmap.launch">
+            <arg name="rgb_topic" value="$(arg rgb_topic)"/>
+            <arg name="camera_en" value="false"/>
+            <arg name="camera_namespace" value="$(arg camera_namespace)"/>
+            <arg name="camera_model" value="$(arg camera_model)"/>
+            <arg name="urdf_namespace" value="$(arg urdf_namespace)"/>
+            <arg name="rviz" value="$(arg rviz)" />
+            <arg name="map_frame_id" value="$(arg map_frame_id)"/>
+            <arg name="grid_size" value="$(arg map_resolution)" />
+            <arg name="imu" value="$(arg imu)" />
+            <arg name="gftt_min_dist" value="10"/>
+            <arg name="max_depth" value="$(arg depth_max)"/>
+            <arg name="use_compressed" value="false"/>
+        </include>
+    </group>
+    <group unless="$(arg map)">
+        <node if="$(arg rviz)" pkg="rviz" type="rviz" name="$(arg camera_model)_processing_rivz" 
+            args="-d $(find i3dr_stereo_camera)/rviz/$(arg camera_model)_map_scene.rviz"/>
+    </group>
+
+    <group if="$(arg glue)">
+        <node name="pcl_point_tf" pkg="i3dr_pcl_tools" type="transform_pcl_frame" output="screen" >
+            <param name="tf" type="string" value="base" />
+            <param name="pcl2_input" type="string" value="/$(arg camera_namespace)/points2_b" />
+            <param name="pcl2_output" type="string" value="/$(arg camera_namespace)/points2_tf" />
+            <param name="pcl_output" type="string" value="/$(arg camera_namespace)/points_tf" />
+        </node>
+        <node name="pcl_map" pkg="i3dr_pcl_tools" type="pcl_map" output="screen" >
+            <param name="resolution" type="double" value="0.01" />
+            <param name="pcl2_input" type="string" value="/$(arg camera_namespace)/points2_tf" />
+            <param name="pcl2_output" type="string" value="/$(arg camera_namespace)/map_plc2" />
+            <param name="pcl_output" type="string" value="/$(arg camera_namespace)/map_pcl" />
+        </node>
+    </group>
+    <group unless="$(arg glue)">
+        <node if="$(arg rviz)" pkg="rviz" type="rviz" name="$(arg camera_model)_processing_rivz" 
+            args="-d $(find i3dr_stereo_camera)/rviz/$(arg camera_model)_glue_scene.rviz"/>
+    </group>
+
+    <node if="$(arg gui)" pkg="i3dr_stereo_camera" type="stereo_gui" name="$(anon stereo_gui)" ns="$(arg camera_namespace)" output="screen"/>
+
+</launch>

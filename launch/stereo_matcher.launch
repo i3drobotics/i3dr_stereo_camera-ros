@@ -61,7 +61,7 @@
   <arg if="$(eval stereo_algorithm == 2)" name="interp" default="false"/>
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_range" default="5" />
   <arg if="$(eval stereo_algorithm == 2)" name="speckle_size" default="1000" />
-  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="4" />
+  <arg if="$(eval stereo_algorithm == 2)" name="prefilter_cap" default="5" />
   <!-- Not used in I3DR SGM -->
   <arg if="$(eval stereo_algorithm == 2)" name="uniqueness_ratio" default="2" />
   <arg if="$(eval stereo_algorithm == 2)" name="texture_threshold" default="10" />
@@ -295,8 +295,17 @@
   <!-- Convert disparity to depth -->
   <group ns="$(arg camera_namespace)">
     <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="$(anon i3dr_disparity2depth)" output="screen">
-      <param name="depth_max" value="$(arg depth_max)" />
-      <param name="depth_min" value="$(arg depth_min)" />
+      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
+      <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
+      <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
+    </node>
+  </group>
+
+  <!-- Crop image to only pixels with generated disparity -->
+  <group ns="$(arg camera_namespace)">
+    <node pkg="i3dr_stereo_camera" type="crop_image_by_disparity" name="$(anon i3dr_cropImgByDisp)" output="screen">
+      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
+      <remap from="left/image_rect_disp_cropped" to="$(arg left_image_rect_topic)_disp_cropped"/>
     </node>
   </group>
 
