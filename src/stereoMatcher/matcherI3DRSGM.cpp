@@ -2,7 +2,10 @@
 
 void MatcherI3DRSGM::init(void)
 {
-    matcher = new I3DRSGM(param_file_, image_size_);
+    //boost::filesystem::path p("C:\\folder\\foo.txt");
+    //boost::filesystem::path dir = p.parent_path();
+    tmp_param_file_ = "/home/i3dr/i3dr_mapping/data/tmp.param";
+    matcher = new I3DRSGM(tmp_param_file_,param_file_);
 
     setupDefaultMatcher();
     cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
@@ -16,6 +19,10 @@ void MatcherI3DRSGM::setupDefaultMatcher(void)
     //matcher->enableTextureDSI(false);
     //matcher->enableSubpixel(true);
     //matcher->maxPyramid(4);
+    matcher->maxPyramid(6);
+    matcher->enableInterpolation(false);
+    matcher->enableOcclusionDetection(false);
+    matcher->enableOccInterpol(false);
     matcher->setNoDataValue(-10000);
 #ifdef WITH_CUDA
     matcher->enableCPU(false);
@@ -26,23 +33,16 @@ void MatcherI3DRSGM::setupDefaultMatcher(void)
 
 int MatcherI3DRSGM::forwardMatch()
 {
-    matcher->setImages(*left, *right);
-    int exitCode = matcher->compute(disparity_lr);
-    if (exitCode == 0)
-    {
-        disparity_lr.convertTo(disparity_lr, CV_32FC1,-16);
-    }
-    return exitCode;
+    disparity_lr = matcher->forwardMatch(*left,*right);
+    disparity_lr.convertTo(disparity_lr, CV_32FC1,-16);
+    return 0;
 }
 
 int MatcherI3DRSGM::backwardMatch()
 {
-    int exitCode = matcher->backwardMatch(disparity_rl);
-    if (exitCode == 0)
-    {
-        disparity_rl.convertTo(disparity_rl, CV_32FC1, -16);
-    }
-    return exitCode;
+    disparity_rl = matcher->backwardMatch(*left,*right);
+    disparity_rl.convertTo(disparity_rl, CV_32FC1, -16);
+    return 0;
 }
 
 void MatcherI3DRSGM::setWindowSize(int window_size)
@@ -93,5 +93,5 @@ void MatcherI3DRSGM::setSpeckleFilterRange(int range)
     matcher->setSpeckleDifference(range);
 }
 void MatcherI3DRSGM::setPreFilterCap(int cap){
-    matcher->maxPyramid(cap);
+    //matcher->maxPyramid(cap);
 }

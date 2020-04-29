@@ -40,6 +40,7 @@ private:
     void setupDefaultMatcher(void);
 
     std::string param_file_;
+    std::string tmp_param_file_ = "tmp.param";
     cv::Size image_size_;
 
     I3DRSGM *matcher;
