@@ -18,12 +18,17 @@ catkin_make
 To build with the I3DR Stereo Matcher use the following command:
 
 ``` bash
-catkin_make -DENABLE_I3DR_ALG=ON
+catkin_make -DWITH_I3DR_ALG=ON
 ```
 As I3DR Stereo Matcher uses CUDA the following enviromental varaiables should be set to avoid JIT recompiling:
 ```
 export CUDA_CACHE_MAXSIZE=2147483648
 export CUDA_CACHE_DISABLE=0
+```
+Contact info@i3drobotics.com for a license to use this matcher. 
+We will provide you with a license file that should be placed in the following folder after building the workspace:
+```
+/path/to/repo/devel/lib/i3dr_stereo_camera/yourlicense.lic
 ```
 
 ## Calibration
