@@ -13,6 +13,17 @@ cd /path/to/repo
 catkin_make
 ```
 
+### CUDA
+There is an option to build the stereo matcher with CUDA. This will unlock some extra matchers and run the block matcher on the GPU.
+However, to use CUDA openCV features, a different openCV version than is default for ROS needs to be installed. (Requires OpenCV_contrib modules)
+
+Follow these instructions to install OpenCV on linux with cuda support [here](https://www.pyimagesearch.com/2016/07/11/compiling-opencv-with-cuda-support/)
+
+To build with CUDA use the following build option:
+```bash
+catkin_make -DWITH_CUDA=ON
+```
+
 ### I3DR Stereo Matcher
 
 To build with the I3DR Stereo Matcher use the following command:
