@@ -48,7 +48,7 @@
             <param name="gain_auto" value="$(arg gain_auto)"/>
             <param name="image_encoding" value="mono8"/>
             <param name="enable_hardware_trigger" value="true"/>
-            <param name="mtu_size" value="3000"/>
+            <param name="mtu_size" value="9000"/>
             <param name="inter_pkg_delay" value="5000"/>
             <param name="enable_split_laser" value="$(arg split_laser)"/>
             <param name="binning_x" value="$(arg binning)"/>
@@ -69,7 +69,7 @@
             <param name="gain_auto" value="$(arg gain_auto)"/>
             <param name="image_encoding" value="mono8"/>
             <param name="enable_hardware_trigger" value="true"/>
-            <param name="mtu_size" value="3000"/>
+            <param name="mtu_size" value="9000"/>
             <param name="inter_pkg_delay" value="0"/>
             <param name="enable_split_laser" value="$(arg split_laser)"/>
             <param name="binning_x" value="$(arg binning)"/>
