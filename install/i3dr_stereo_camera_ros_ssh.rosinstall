@@ -1,4 +1,8 @@
 - git:
+    local-name: vision_opencv
+    uri: git@github.com:i3drobotics/vision_opencv.git
+    version: master
+- git:
     local-name: catkin_simple
     uri: git@github.com:catkin/catkin_simple.git
     version: master
