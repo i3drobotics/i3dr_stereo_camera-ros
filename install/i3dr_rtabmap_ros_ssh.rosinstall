@@ -1,0 +1,8 @@
+- git:
+    local-name: i3dr_rtabmap-ros
+    uri: git@github.com:i3drobotics/i3dr_rtabmap-ros.git
+    version: master
+- git:
+    local-name: rtabmap_ros
+    uri: git@github.com:i3drobotics/rtabmap_ros.git
+    version: master
