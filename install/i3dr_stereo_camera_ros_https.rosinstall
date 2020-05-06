@@ -1,4 +1,8 @@
 - git:
+    local-name: catkin_simple
+    uri: https://github.com/catkin/catkin_simple.git
+    version: master
+- git:
     local-name: opencv3_catkin
     uri: https://github.com/i3drobotics/opencv3_catkin.git
     version: master
