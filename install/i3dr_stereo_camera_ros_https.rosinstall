@@ -3,6 +3,10 @@
     uri: https://github.com/i3drobotics/vision_opencv.git
     version: kinetic
 - git:
+    local-name: cmake_external_project_catkin
+    uri: https://github.com/zurich-eye/cmake_external_project_catkin.git
+    version: master
+- git:
     local-name: catkin_simple
     uri: https://github.com/catkin/catkin_simple.git
     version: master
