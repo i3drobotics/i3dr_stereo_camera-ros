@@ -6,3 +6,7 @@
     local-name: rtabmap_ros
     uri: git@github.com:i3drobotics/rtabmap_ros.git
     version: master
+- git:
+    local-name: apriltag_ros
+    uri: git@github.com:AprilRobotics/apriltag_ros.git
+    version: master
