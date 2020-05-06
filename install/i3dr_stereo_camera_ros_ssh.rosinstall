@@ -1,7 +1,7 @@
 - git:
     local-name: vision_opencv
     uri: git@github.com:i3drobotics/vision_opencv.git
-    version: master
+    version: kinetic
 - git:
     local-name: catkin_simple
     uri: git@github.com:catkin/catkin_simple.git
@@ -38,7 +38,3 @@
     local-name: camera_control_msgs
     uri: git@github.com:i3drobotics/camera_control_msgs.git
     version: indigo-devel
-- git:
-    local-name: vision_opencv
-    uri: git@github.com:ros-perception/vision_opencv.git
-    version: kinetic
