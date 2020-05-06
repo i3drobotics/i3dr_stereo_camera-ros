@@ -19,6 +19,10 @@
     uri: https://github.com/i3drobotics/i3dr_rosserial_phobos-ros.git
     version: master
 - git:
+    local-name: i3dr_pcl_tools-ros
+    uri: https://github.com/i3drobotics/i3dr_pcl_tools-ros.git
+    version: master
+- git:
     local-name: pylon_camera
     uri: https://github.com/i3drobotics/pylon_camera.git
     version: master
