@@ -3,10 +3,26 @@
     uri: git@github.com:i3drobotics/i3dr_rtabmap-ros.git
     version: master
 - git:
+    local-name: rtabmap
+    uri: git@github.com:introlab/rtabmap.git
+    version: master
+- git:
     local-name: rtabmap_ros
     uri: git@github.com:i3drobotics/rtabmap_ros.git
     version: master
 - git:
+    local-name: apriltag
+    uri: git@github.com:AprilRobotics/apriltag.git
+    version: master  
+- git:
     local-name: apriltag_ros
     uri: git@github.com:AprilRobotics/apriltag_ros.git
     version: master
+- git:
+    local-name: octomap
+    uri: git@github.com:OctoMap/octomap.git
+    version: devel
+- git:
+    local-name: octomap_rviz_plugins
+    uri: git@github.com:OctoMap/octomap_rviz_plugins.git
+    version: kinetic-devel
