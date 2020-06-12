@@ -106,7 +106,7 @@
     <group if="$(arg glue)">
         <node name="pcl_point_tf" pkg="i3dr_pcl_tools" type="transform_pcl_frame" output="screen" >
             <param name="tf" type="string" value="base" />
-            <param name="pcl2_input" type="string" value="/$(arg camera_namespace)/points2_b" />
+            <param name="pcl2_input" type="string" value="/$(arg camera_namespace)/points2" />
             <param name="pcl2_output" type="string" value="/$(arg camera_namespace)/points2_tf" />
             <param name="pcl_output" type="string" value="/$(arg camera_namespace)/points_tf" />
         </node>

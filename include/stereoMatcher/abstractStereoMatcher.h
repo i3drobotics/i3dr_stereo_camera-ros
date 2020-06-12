@@ -22,6 +22,7 @@ public:
    * @param[in] right Right image
    */
   void setImages(cv::Mat *left, cv::Mat *right);
+  virtual void setDownsampleScale(double scale);
 
   //General paramter functions
   virtual void setDisparityRange(int disparity_range) = 0;
@@ -82,6 +83,8 @@ protected:
   cv::Mat disparity_scale;
 
   cv::Size image_size;
+
+  double downsample_scale = 1;
 
   int min_disparity = 0;
   int disparity_range = 64;

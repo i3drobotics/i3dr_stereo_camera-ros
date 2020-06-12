@@ -45,7 +45,7 @@
 #include <stereoMatcher/matcherOpenCVCSBPCuda.h>
 #endif
 
-#ifdef WITH_I3DR_ALG
+#ifdef WITH_I3DRSGM
 #include <stereoMatcher/matcherI3DRSGM.h>
 #endif
 
@@ -80,12 +80,14 @@ MatcherOpenCVBlockCuda *block_cuda_matcher;
 MatcherOpenCVBPCuda *bp_cuda_matcher;
 MatcherOpenCVCSBPCuda *csbp_cuda_matcher;
 #endif
-#ifdef WITH_I3DR_ALG
+#ifdef WITH_I3DRSGM
 MatcherI3DRSGM *i3drsgm_matcher;
 #endif
 
 float _depth_max = 10;
 float _depth_min = 0;
+float _z_max = 10;
+float _z_min = 0;
 
 bool isFirstImagesRecevied = false;
 
@@ -225,7 +227,7 @@ PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::P
         continue;
       if (abs(point.y) > 50)
         continue;
-      if (point.z > _depth_max || point.z < _depth_min)
+      if (point.z > _z_max || point.z < _z_min)
         continue;
 
       col = rgb_ptr[j];
@@ -363,7 +365,7 @@ void init_matcher(cv::Size image_size)
   bp_cuda_matcher = new MatcherOpenCVBPCuda(empty_str, image_size);
   csbp_cuda_matcher = new MatcherOpenCVCSBPCuda(empty_str, image_size);
 #endif
-#ifdef WITH_I3DR_ALG
+#ifdef WITH_I3DRSGM
   i3drsgm_matcher = new MatcherI3DRSGM(_jr_config_file, image_size);
 #endif
 
@@ -377,7 +379,7 @@ void init_matcher(cv::Size image_size)
   }
   else if (_stereo_algorithm == I3DR_StereoSGM)
   {
-#ifdef WITH_I3DR_ALG
+#ifdef WITH_I3DRSGM
     matcher = i3drsgm_matcher;
 #else
     matcher = block_matcher;
@@ -436,9 +438,9 @@ Mat stereo_match(Mat left_image, Mat right_image)
   }
 
   //std::cout << "Matching..." << std::endl;
-
+  matcher->setDownsampleScale(1); //TODO impliment this better
   matcher->setImages(&left_image, &right_image);
-
+  
   std::cout << "[generate_disparity] Computing match" << std::endl;
   int exitCode = matcher->match();
   std::cout << "[generate_disparity] Match complete" << std::endl;
@@ -798,12 +800,6 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
 
   ty = type2str(left_rect.type());
   ROS_INFO("Rectified image type: %s %dx%d", ty.c_str(), left_rect.cols, left_rect.rows);
-  //ROS_INFO("Rectified images.");
-
-  //ROS_INFO("Publishing recitifyed images...");
-  publish_image(_rect_l_pub, msg_left_image, left_rect);
-  publish_image(_rect_r_pub, msg_right_image, right_rect);
-  //ROS_INFO("Published recitifyed images.");
 
   // Allocate new disparity image message
   stereo_msgs::DisparityImagePtr disp_msg = boost::make_shared<stereo_msgs::DisparityImage>();
@@ -818,6 +814,10 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   disp_msg->valid_window.width = 0;
   disp_msg->valid_window.height = 0;
 
+  ROS_INFO("Publishing recitifyed images...");
+  publish_image(_rect_l_pub, msg_left_image, left_rect);
+  publish_image(_rect_r_pub, msg_right_image, right_rect);
+
   // Perform block matching to find the disparities
   //ROS_INFO("Stereo Matching...");
   int exitCode = processDisparity(left_rect, right_rect, model_, *disp_msg);
@@ -828,9 +828,12 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   }
   //ROS_INFO("Stereo Matching complete.");
 
+  
+
   ROS_INFO("Publishing disparity message...");
   _disparity_pub.publish(disp_msg);
-  ROS_INFO("Published disparity message.");
+
+  /*
 
   ROS_INFO("Publishing point cloud message...");
   cv_bridge::CvImage cv_left_rect_image, cv_right_rect_image;
@@ -843,6 +846,8 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
 
   pointCloudCb(disp_msg, cv_left_rect_image.toImageMsg(), cv_right_rect_image.toImageMsg(), msg_left_camera_info, msg_right_camera_info);
   ROS_INFO("Published point cloud message");
+
+  */
 
   _stereo_left = input_image_left->image;
   _stereo_right = input_image_right->image;
@@ -924,7 +929,7 @@ void parameterCallback(i3dr_stereo_camera::i3DR_DisparityConfig &config, uint32_
     }
     else if (_stereo_algorithm == I3DR_StereoSGM)
     {
-#ifdef WITH_I3DR_ALG
+#ifdef WITH_I3DRSGM
       matcher = i3drsgm_matcher;
 #else
       matcher = block_matcher;
@@ -997,7 +1002,7 @@ int main(int argc, char **argv)
   float p1, p2;
   bool interp;
   std::string frame_id, left_camera_calibration_url, right_camera_calibration_url, jr_config_file;
-  float depth_max, depth_min;
+  float depth_max, depth_min, z_max, z_min;
   bool save_points_as_binary;
 
   std::string ns = ros::this_node::getNamespace();
@@ -1097,6 +1102,16 @@ int main(int argc, char **argv)
     _depth_min = depth_min;
     ROS_INFO("depth_min: %f", depth_min);
   }
+  if (p_nh.getParam("z_max", z_max))
+  {
+    _z_max = z_max;
+    ROS_INFO("z_max: %f", z_max);
+  }
+  if (p_nh.getParam("z_min", z_min))
+  {
+    _z_min = z_min;
+    ROS_INFO("z_min: %f", z_min);
+  }
   if (p_nh.getParam("save_pcl_binary", save_points_as_binary))
   {
     _save_points_as_binary = save_points_as_binary;
@@ -1119,8 +1134,8 @@ int main(int argc, char **argv)
   _disparity_pub = nh.advertise<stereo_msgs::DisparityImage>(ns + "/disparity", 1, true);
   _rect_l_pub = nh.advertise<sensor_msgs::Image>(ns + "/left/image_rect", 1, true);
   _rect_r_pub = nh.advertise<sensor_msgs::Image>(ns + "/right/image_rect", 1, true);
-  _point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2", 1);
-  _point_cloud_normal_pub = nh.advertise<PointCloudRGBNormal>(ns + "/points2_normal", 1);
+  //_point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2", 1);
+  //_point_cloud_normal_pub = nh.advertise<PointCloudRGBNormal>(ns + "/points2_normal", 1);
 
   // Start services
   ros::ServiceServer srv_save_stereo = nh.advertiseService("save_stereo", save_stereo);

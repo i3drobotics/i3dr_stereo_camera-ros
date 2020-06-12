@@ -1,8 +1,27 @@
 #include "stereoMatcher/I3DRSGM.h"
+#include <stdio.h>  /* defines FILENAME_MAX */
+#ifdef WINDOWS
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+ #endif
 
 //Initialise matcher
 void I3DRSGM::init(std::string tmp_param_file, std::string param_file)
 {
+    char cCurrentPath[FILENAME_MAX];
+
+    GetCurrentDir(cCurrentPath, sizeof(cCurrentPath));
+    //{
+        
+   // }
+
+    //cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
+
+    printf ("The current working directory is %s\n", cCurrentPath);
+
     tmp_param_file_ = tmp_param_file;
     std::cerr << param_file << std::endl;
     std::cerr << tmp_param_file_ << std::endl;

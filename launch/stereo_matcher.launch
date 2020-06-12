@@ -3,15 +3,10 @@
 <launch>
 
   <!-- SETUP ARGUMENTS -->
+  <!-- namespace of camera for subscribing to image topics -->
   <arg name="camera_namespace" default="stereo"/>
+  <!-- subscribe to split laser image topics using the laser topic suffix -->
   <arg name="split_laser" default="false"/>
-
-  <arg name="run_remote" default="false"/>
-  <group if="$(arg run_remote)">
-    <arg name="machine_name" default="i3drwl001"/>
-    <arg name="machine_address" default="192.168.1.34"/>
-    <machine name="$(arg machine_name)" address="$(arg machine_address)" env-loader="/home/i3dr/Documents/SBRI/i3dr_sbri_rosinstall/ini_env.bash" password="r0b0cr0p"/>
-  </group>
 
   <!-- Matcher Parameters -->
   <!-- see link below for details on matcher parameters -->
@@ -112,9 +107,18 @@
   <arg if="$(eval stereo_algorithm == 5)" name="p2" default="400"/>
   <arg if="$(eval stereo_algorithm == 5)" name="prefilter_size" default="147" />
 
+  <!-- maximum and minimum distance for depth map -->
   <arg name="depth_max" default="10" />
   <arg name="depth_min" default="0" />
 
+  <!-- maximum and minimum distance for point cloud -->
+  <arg name="z_max" default="$(arg depth_max)" />
+  <arg name="z_min" default="$(arg depth_min)" />
+
+  <!-- crop image by disparity map -->
+  <arg name="cropByDisp" default="false" />
+
+  <!-- setup image topics -->
   <arg if="$(arg split_laser)" name="laser_suffix" value="_with_laser"/>
   <arg unless="$(arg split_laser)" name="laser_suffix" value=""/>
 
@@ -138,150 +142,43 @@
 
   <arg name="frame_id" default="$(arg camera_namespace)_depth_optical_frame"/>
 
+  <!-- Choose JR parameter file for inital settings (only for I3DRSGM) -->
   <arg name="jr_config_file" default="$(find i3dr_stereo_camera)/ini/quick.param"/>
 
-  <arg name="use_i3dr_matcher" default="false"/>
+  <!-- STEREO MATCHER -->
+  <node ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="$(anon i3dr_disparity_proc)" output="screen">
 
-  <group if="$(arg run_remote)">
+    <param name="frame_id" value="$(arg frame_id)"/>
 
-    <!-- STEREO <MATCHER> -->
-    <node machine="$(arg machine_name)" unless="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="stereo_image_proc" type="stereo_image_proc" name="$(anon stereo_image_proc)" output="screen">
+    <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
+    <param name="min_disparity" value="$(arg min_disparity)" />
+    <param name="disparity_range" value="$(arg disparity_range)" />
+    <param name="correlation_window_size" value="$(arg correlation_window_size)" />
+    <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
+    <param name="texture_threshold" value="$(arg texture_threshold)" />
+    <param name="speckle_range" value="$(arg speckle_range)" />
+    <param name="speckle_size" value="$(arg speckle_size)" />
+    <param name="p1" value="$(arg p1)" />
+    <param name="p2" value="$(arg p2)" />
+    <param name="prefilter_size" value="$(arg prefilter_size)" />
+    <param name="prefilter_cap" value="$(arg prefilter_cap)" />
+    <param name="interp" value="$(arg interp)" />
+    <param name="depth_max" value="$(arg depth_max)" />
+    <param name="depth_min" value="$(arg depth_min)" />
 
-      <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
-      <param name="min_disparity" value="$(arg min_disparity)" />
-      <param name="disparity_range" value="$(arg disparity_range)" />
-      <param name="correlation_window_size" value="$(arg correlation_window_size)" />
-      <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
-      <param name="texture_threshold" value="$(arg texture_threshold)" />
-      <param name="speckle_range" value="$(arg speckle_range)" />
-      <param name="speckle_size" value="$(arg speckle_size)" />
-      <param name="prefilter_size" value="$(arg prefilter_size)" />
-      <param name="prefilter_cap" value="$(arg prefilter_cap)" />
-      <param name="p1" value="$(arg p1)" />
-      <param name="p2" value="$(arg p2" />
+    <param name="jr_config_file" value="$(arg jr_config_file)" />
 
+    <remap from="left/image_raw" to="$(arg left_image_topic)"/>
+    <remap from="right/image_raw" to="$(arg right_image_topic)"/>
+    <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
+    <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
+    <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
+    <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
 
-      <param name="approximate_sync" value="true" />
-      <param name="queue_size" value="50"/>
+    <param name="queue_size" value="10"/>
+  </node>
 
-      <remap from="left/image_raw" to="$(arg left_image_topic)"/>
-      <remap from="right/image_raw" to="$(arg right_image_topic)"/>
-      <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
-      <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
-
-      <remap from="right/image_color" to="$(arg right_image_color_topic)"/>
-      <remap from="right/image_mono" to="$(arg right_image_mono_topic)"/>
-      <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
-      <remap from="right/image_rect_color" to="$(arg right_image_rect_color_topic)"/>
-
-      <remap from="left/image_color" to="$(arg left_image_color_topic)"/>
-      <remap from="left/image_mono" to="$(arg left_image_mono_topic)"/>
-      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
-      <remap from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
-    </node>
-
-    <node machine="$(arg machine_name)" if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="$(anon i3dr_disparity_proc)" output="screen">
-
-      <param name="frame_id" value="$(arg frame_id)"/>
-
-      <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
-      <param name="min_disparity" value="$(arg min_disparity)" />
-      <param name="disparity_range" value="$(arg disparity_range)" />
-      <param name="correlation_window_size" value="$(arg correlation_window_size)" />
-      <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
-      <param name="texture_threshold" value="$(arg texture_threshold)" />
-      <param name="speckle_range" value="$(arg speckle_range)" />
-      <param name="speckle_size" value="$(arg speckle_size)" />
-      <param name="p1" value="$(arg p1)" />
-      <param name="p2" value="$(arg p2)" />
-      <param name="interp" value="$(arg interp)" />
-
-      <param name="jr_config_file" value="$(arg jr_config_file)" />
-
-      <remap from="left/image_raw" to="$(arg left_image_topic)"/>
-      <remap from="right/image_raw" to="$(arg right_image_topic)"/>
-      <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
-      <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
-      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
-      <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
-
-      <param name="queue_size" value="10"/>
-    </node>
-  </group>
-
-  <group unless="$(arg run_remote)">
-
-    <!-- STEREO <MATCHER> -->
-    <node unless="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="stereo_image_proc" type="stereo_image_proc" name="$(anon stereo_image_proc)" output="screen">
-
-      <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
-      <param name="min_disparity" value="$(arg min_disparity)" />
-      <param name="disparity_range" value="$(arg disparity_range)" />
-      <param name="correlation_window_size" value="$(arg correlation_window_size)" />
-      <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
-      <param name="texture_threshold" value="$(arg texture_threshold)" />
-      <param name="speckle_range" value="$(arg speckle_range)" />
-      <param name="speckle_size" value="$(arg speckle_size)" />
-      <param name="prefilter_size" value="$(arg prefilter_size)" />
-      <param name="prefilter_cap" value="$(arg prefilter_cap)" />
-      <param name="p1" value="$(arg p1)" />
-      <param name="p2" value="$(arg p2" />
-
-      <param name="depth_max" value="$(arg depth_max)" />
-      <param name="depth_min" value="$(arg depth_min)" />
-
-      <param name="approximate_sync" value="true" />
-      <param name="queue_size" value="50"/>
-
-      <remap from="left/image_raw" to="$(arg left_image_topic)"/>
-      <remap from="right/image_raw" to="$(arg right_image_topic)"/>
-      <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
-      <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
-
-      <remap from="right/image_color" to="$(arg right_image_color_topic)"/>
-      <remap from="right/image_mono" to="$(arg right_image_mono_topic)"/>
-      <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
-      <remap from="right/image_rect_color" to="$(arg right_image_rect_color_topic)"/>
-
-      <remap from="left/image_color" to="$(arg left_image_color_topic)"/>
-      <remap from="left/image_mono" to="$(arg left_image_mono_topic)"/>
-      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
-      <remap from="left/image_rect_color" to="$(arg left_image_rect_color_topic)"/>
-    </node>
-
-    <node if="$(arg use_i3dr_matcher)" ns="$(arg camera_namespace)" pkg="i3dr_stereo_camera" type="generate_disparity" name="$(anon i3dr_disparity_proc)" output="screen">
-
-      <param name="frame_id" value="$(arg frame_id)"/>
-
-      <param name="stereo_algorithm" value="$(arg stereo_algorithm)" />
-      <param name="min_disparity" value="$(arg min_disparity)" />
-      <param name="disparity_range" value="$(arg disparity_range)" />
-      <param name="correlation_window_size" value="$(arg correlation_window_size)" />
-      <param name="uniqueness_ratio" value="$(arg uniqueness_ratio)" />
-      <param name="texture_threshold" value="$(arg texture_threshold)" />
-      <param name="speckle_range" value="$(arg speckle_range)" />
-      <param name="speckle_size" value="$(arg speckle_size)" />
-      <param name="p1" value="$(arg p1)" />
-      <param name="p2" value="$(arg p2)" />
-      <param name="prefilter_size" value="$(arg prefilter_size)" />
-      <param name="prefilter_cap" value="$(arg prefilter_cap)" />
-      <param name="interp" value="$(arg interp)" />
-      <param name="depth_max" value="$(arg depth_max)" />
-      <param name="depth_min" value="$(arg depth_min)" />
-
-      <param name="jr_config_file" value="$(arg jr_config_file)" />
-
-      <remap from="left/image_raw" to="$(arg left_image_topic)"/>
-      <remap from="right/image_raw" to="$(arg right_image_topic)"/>
-      <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
-      <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
-      <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
-      <remap from="right/image_rect" to="$(arg right_image_rect_topic)"/>
-
-      <param name="queue_size" value="10"/>
-    </node>
-  </group>
-
+  <!-- rectifify extra images from using split laser image topics -->
   <group if="$(arg split_laser)">
     <!-- Rectify no laser images that aren't used to generate 3D (so rectifiy isn't created) -->
     <node pkg="i3dr_stereo_camera" type="rectify" ns="$(arg camera_namespace)" name="$(anon rectify_non_laser)" output="screen">
@@ -292,68 +189,27 @@
     </node>
   </group>
 
-  <!-- Convert disparity to depth -->
+  <!-- Convert disparity to depth (depth map and point cloud) -->
   <group ns="$(arg camera_namespace)">
     <node pkg="i3dr_stereo_camera" type="disparity_to_depth" name="$(anon i3dr_disparity2depth)" output="screen">
       <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
       <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
       <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
+      <param name="depth_max" value="$(arg depth_max)" />
+      <param name="z_max" value="$(arg z_max)" />
+      <param name="gen_point_cloud" value="false" />
     </node>
   </group>
 
   <!-- Crop image to only pixels with generated disparity -->
-  <group ns="$(arg camera_namespace)">
+  <group if="$(arg cropByDisp)" ns="$(arg camera_namespace)">
     <node pkg="i3dr_stereo_camera" type="crop_image_by_disparity" name="$(anon i3dr_cropImgByDisp)" output="screen">
       <remap from="left/image_rect" to="$(arg left_image_rect_topic)"/>
       <remap from="left/image_rect_disp_cropped" to="$(arg left_image_rect_topic)_disp_cropped"/>
     </node>
   </group>
 
-  <node pkg="nodelet" type="nodelet" args="manager"
-        name="i3dr_stereo_manager" output="screen"/>
-
-  <node pkg="nodelet" type="nodelet" name="$(anon i3dr_depth2xyz)"
-        args="load depth_image_proc/point_cloud_xyzrgb i3dr_stereo_manager --no-bond">
-    <remap from="depth_registered/image_rect" to="$(arg camera_namespace)/depth"/>
-    <remap from="depth_registered/points" to="$(arg camera_namespace)/points_d"/>
-    <remap from="rgb/image_rect_color" to="$(arg left_image_rect_topic)"/>
-    <remap from="rgb/camera_info" to="$(arg left_camera_info_topic)"/>
-  </node>
-
   <!-- run rqt control gui for adjusting stereo configuration -->
   <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="$(anon display_controls_)" />
-
-  <!-- Compress images -->
-  <node pkg="image_transport"
-        type="republish"
-        ns="$(arg camera_namespace)"
-        name="img_comp_left_image_topic"
-        args="compressed raw_in:=$(arg left_image_topic) out:=$(arg left_image_topic)" output="screen"/>
-
   
-  <node pkg="image_transport"
-        type="republish"
-        ns="$(arg camera_namespace)"
-        name="img_comp_right_image_topic"
-        args="compressed raw_in:=$(arg right_image_topic) out:=$(arg right_image_topic)" output="screen"/>
-  <!--
-  <node pkg="image_transport"
-        type="republish"
-        ns="$(arg camera_namespace)"
-        name="img_comp_left_image_rect_topic"
-        args="compressed raw_in:=$(arg left_image_rect_topic) out:=$(arg left_image_rect_topic)" output="screen"/>
-  <node pkg="image_transport"
-        type="republish"
-        ns="$(arg camera_namespace)"
-        name="img_comp_right_image_rect_topic"
-        args="compressed raw_in:=$(arg right_image_rect_topic) out:=$(arg right_image_rect_topic)" output="screen"/>#
-  -->
-
-  <node pkg="image_transport"
-        type="republish"
-        ns="$(arg camera_namespace)"
-        name="img_comp_depth_topic"
-        args="compressed raw_in:=depth out:=depth" output="screen"/>
-  
-
 </launch>

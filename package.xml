@@ -16,7 +16,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <!-- Some i3dr packages need opencv >= 3.3.1 with contrib modules. opencv3_catkin includes the required. -->
-  <depend>opencv3_catkin</depend>
+  <depend>opencv3</depend>
   <depend>roscpp</depend>
   <depend>camera_info_manager</depend>
   <depend>image_transport</depend>

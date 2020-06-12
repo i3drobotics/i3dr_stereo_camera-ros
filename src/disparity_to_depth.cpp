@@ -48,6 +48,9 @@ MODIFIED BY: Ben Knight (I3D Robotics)
 
 image_transport::Publisher _depth_pub;
 ros::Publisher _point_cloud_pub;
+double _depth_max = 100;
+double _z_max = 100;
+bool _gen_point_cloud = true;
 
 typedef message_filters::sync_policies::ApproximateTime<
 	stereo_msgs::DisparityImage, sensor_msgs::Image, sensor_msgs::CameraInfo, sensor_msgs::CameraInfo>
@@ -150,21 +153,22 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 				float y_index = i;
 
 				cv::Vec4d homg_pt = _Q * cv::Vec4d((double)x_index, (double)y_index, (double)d, 1.0);
-
-				float x = (float)homg_pt[0] / (float)homg_pt[3];
-				float y = (float)homg_pt[1] / (float)homg_pt[3];
 				float z = (float)homg_pt[2] / (float)homg_pt[3];
 
-				depth32f.at<float>(i, j) = z;
-
-				uchar intensity = image.at<uchar>(i,j);
-
-				*iter_x = x;
-        		*iter_y = y;
-        		*iter_z = z;
-				*iter_r = intensity;
-        		*iter_g = intensity;
-        		*iter_b = intensity;
+				if (z <= _depth_max){
+					depth32f.at<float>(i, j) = z;
+				}
+				if (z <= _z_max && _gen_point_cloud){
+					float x = (float)homg_pt[0] / (float)homg_pt[3];
+					float y = (float)homg_pt[1] / (float)homg_pt[3];
+					uchar intensity = image.at<uchar>(i,j);
+					*iter_x = x;
+					*iter_y = y;
+					*iter_z = z;
+					*iter_r = intensity;
+					*iter_g = intensity;
+					*iter_b = intensity;
+				}
 			}
 		}
 	}
@@ -177,7 +181,9 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 	cvDepth.toImageMsg(depthMsg);
 
 	_depth_pub.publish(depthMsg);
-	_point_cloud_pub.publish(points_msg);
+	if (_gen_point_cloud){
+		_point_cloud_pub.publish(points_msg);
+	}
 }
 
 void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sensor_msgs::ImageConstPtr &camImage, const sensor_msgs::CameraInfoConstPtr &camLInfoMsg, const sensor_msgs::CameraInfoConstPtr &camRInfoMsg)
@@ -205,17 +211,36 @@ int main(int argc, char **argv)
 
 	std::string ns = ros::this_node::getNamespace();
 
+	double depth_max, z_max;
+	bool gen_point_cloud;
+
+	if (p_nh.getParam("depth_max", depth_max))
+	{
+		_depth_max = depth_max;
+		ROS_INFO("depth_max: %f", _depth_max);
+	}
+	if (p_nh.getParam("z_max", z_max))
+	{
+		_z_max = z_max;
+		ROS_INFO("z_max: %f", _z_max);
+	}
+	if (p_nh.getParam("gen_point_cloud", gen_point_cloud))
+	{
+		_gen_point_cloud = gen_point_cloud;
+		ROS_INFO("gen_point_cloud: %d", _gen_point_cloud);
+	}
+
 	message_filters::Subscriber<stereo_msgs::DisparityImage> sub_disp(nh, ns + "/disparity", 1);
 	message_filters::Subscriber<sensor_msgs::Image> sub_img(nh, ns + "/left/image_rect", 1);
 	message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_l(nh, ns + "/left/camera_info", 1);
 	message_filters::Subscriber<sensor_msgs::CameraInfo> sub_camera_info_r(nh, ns + "/right/camera_info", 1);
 
-	message_filters::Synchronizer<policy_t> sync(policy_t(20), sub_disp, sub_img, sub_camera_info_l, sub_camera_info_r);
+	message_filters::Synchronizer<policy_t> sync(policy_t(100), sub_disp, sub_img, sub_camera_info_l, sub_camera_info_r);
 	sync.registerCallback(boost::bind(&callback, _1, _2, _3, _4));
 
 	image_transport::ImageTransport it(nh);
 	_depth_pub = it.advertise(ns + "/depth", 1);
-	_point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2_b", 1);
+	_point_cloud_pub = nh.advertise<PointCloudRGB>(ns + "/points2", 1);
 
 	ros::spin();
 }

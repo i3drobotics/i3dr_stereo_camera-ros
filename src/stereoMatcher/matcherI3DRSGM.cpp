@@ -2,9 +2,7 @@
 
 void MatcherI3DRSGM::init(void)
 {
-    //boost::filesystem::path p("C:\\folder\\foo.txt");
-    //boost::filesystem::path dir = p.parent_path();
-    tmp_param_file_ = "/home/i3dr/i3dr_mapping/data/tmp.param";
+    tmp_param_file_ = "tmp.param";
     matcher = new I3DRSGM(tmp_param_file_,param_file_);
 
     setupDefaultMatcher();

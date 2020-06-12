@@ -32,17 +32,18 @@ endif()
 option(WITH_CUDA "Use OpenCV CUDA Libraries" OFF)
 if (WITH_CUDA)
 	add_definitions(-DWITH_CUDA)
+	set(OpenCV_DIR ${CMAKE_CURRENT_BINARY_DIR}/opencv3)
 endif()
 
-# build with i3dr algorithm: 'catkin_make -DWITH_I3DR_ALG=ON'
-option(WITH_I3DR_ALG "Use I3DR Matching algorithm" OFF)
-if (WITH_I3DR_ALG)
+# build with i3dr algorithm: 'catkin_make -DWITH_I3DRSGM=ON'
+option(WITH_I3DRSGM "Use I3DR Matching algorithm" OFF)
+if (WITH_I3DRSGM)
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 	find_package(Phobos REQUIRED)
-	add_definitions(-DWITH_I3DR_ALG)
-else (WITH_I3DR_ALG)
+	add_definitions(-DWITH_I3DRSGM)
+else (WITH_I3DRSGM)
 	# OpenCV 3.3.1 Required for I3DR stereo algorithms
-	find_package(OpenCV 3.3.1 REQUIRED)
+	find_package(OpenCV 3 REQUIRED)
 endif()
 
 find_package(PCL 1.2 REQUIRED)
@@ -86,7 +87,7 @@ link_directories(
 
 add_definitions(${PCL_DEFINITIONS})
 
-if (WITH_I3DR_ALG)
+if (WITH_I3DRSGM)
 	if (WITH_CUDA)
 		add_executable(
 			generate_disparity src/generate_disparity.cpp 
@@ -126,7 +127,7 @@ if (WITH_I3DR_ALG)
 			cudaMem
 		)	
 	endif()
-else (WITH_I3DR_ALG)
+else (WITH_I3DRSGM)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
 	if (WITH_CUDA)
 		add_executable(

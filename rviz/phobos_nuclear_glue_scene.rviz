@@ -197,7 +197,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0299999993
       Style: Points
-      Topic: /phobos_nuclear/points2_b
+      Topic: /phobos_nuclear/points2
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true

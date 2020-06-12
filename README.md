@@ -29,7 +29,7 @@ catkin_make -DWITH_CUDA=ON
 To build with the I3DR Stereo Matcher use the following command:
 
 ``` bash
-catkin_make -DWITH_I3DR_ALG=ON
+catkin_make -DWITH_I3DRSGM=ON
 ```
 As I3DR Stereo Matcher uses CUDA the following enviromental varaiables should be set to avoid JIT recompiling:
 ```
