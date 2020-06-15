@@ -1,6 +1,6 @@
 - git:
     local-name: vision_opencv
-    uri: git@github.com:i3drobotics/vision_opencv.git
+    uri: git@github.com:ros-perception/vision_opencv.git
     version: kinetic
 - git:
     local-name: i3dr_stereo_camera-ros

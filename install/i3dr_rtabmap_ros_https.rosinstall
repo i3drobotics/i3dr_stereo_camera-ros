@@ -8,7 +8,7 @@
     version: master
 - git:
     local-name: rtabmap_ros
-    uri: https://github.com/i3drobotics/rtabmap_ros.git
+    uri: https://github.com/introlab/rtabmap_ros.git
     version: master
 - git:
     local-name: apriltag
