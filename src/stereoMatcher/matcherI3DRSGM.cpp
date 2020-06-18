@@ -14,7 +14,7 @@ void MatcherI3DRSGM::setupDefaultMatcher(void)
 {
     //setOcclusionDetection(false);
     //matcher->enableOccInterpol(false);
-    //matcher->enableTextureDSI(false);
+    matcher->enableTextureDSI(false);
     //matcher->enableSubpixel(true);
     //matcher->maxPyramid(4);
     matcher->maxPyramid(6);
@@ -91,5 +91,5 @@ void MatcherI3DRSGM::setSpeckleFilterRange(int range)
     matcher->setSpeckleDifference(range);
 }
 void MatcherI3DRSGM::setPreFilterCap(int cap){
-    //matcher->maxPyramid(cap);
+    matcher->maxPyramid(cap);
 }

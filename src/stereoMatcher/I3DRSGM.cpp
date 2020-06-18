@@ -436,6 +436,7 @@ void I3DRSGM::maxPyramid(int pyramid_num)
         //std::cerr << "i: " << i << " j: " << j << std::endl;
         j--;
     }
+    std::cerr << "MAX PY: " << params.nNumberOfPyramids << std::endl;
 
     if (include_subpix)
     {
