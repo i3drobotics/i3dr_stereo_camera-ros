@@ -23,6 +23,14 @@
     uri: git@github.com:OctoMap/octomap.git
     version: devel
 - git:
+    local-name: octomap_ros
+    uri: git@github.com:OctoMap/octomap_ros.git
+    version: melodic-devel
+- git:
+    local-name: octomap_mapping
+    uri: git@github.com:OctoMap/octomap_mapping.git
+    version: kinetic-devel
+- git:
     local-name: octomap_rviz_plugins
     uri: git@github.com:OctoMap/octomap_rviz_plugins.git
     version: kinetic-devel
