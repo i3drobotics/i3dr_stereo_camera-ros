@@ -32,6 +32,8 @@
   <depend>cv_bridge</depend>
   <depend>rqt_reconfigure</depend>
   <depend>imu_filter_madgwick</depend>
+  <depend>rviz_imu_plugin</depend>
+  <depend>rviz_plugin_tutorials</depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
