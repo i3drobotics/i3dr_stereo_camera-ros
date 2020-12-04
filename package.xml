@@ -30,6 +30,8 @@
   <depend>dynamic_reconfigure</depend>
   <depend>pcl_ros</depend>
   <depend>cv_bridge</depend>
+  <depend>rqt_reconfigure</depend>
+  <depend>imu_filter_madgwick</depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
