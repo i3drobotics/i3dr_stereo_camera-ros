@@ -1,4 +1,0 @@
-- git:
-    local-name: i3dr_deimos-ros
-    uri: https://github.com/i3drobotics/i3dr_deimos-ros.git
-    version: master
