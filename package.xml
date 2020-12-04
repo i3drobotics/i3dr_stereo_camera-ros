@@ -24,6 +24,8 @@
   <depend>sensor_msgs</depend>
   <depend>xacro</depend>
   <depend>joint_state_publisher</depend>
+  <depend>image_proc</depend>
+  <depend>camera_calibration</depend>
   <depend>stereo_image_proc</depend>
   <depend>robot_state_publisher</depend>
   <depend>std_msgs</depend>
