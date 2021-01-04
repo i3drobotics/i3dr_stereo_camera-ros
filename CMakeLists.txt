@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
-option(WITH_QT "Build QT Application" OFF)
+option(WITH_QT "Build QT Application" ON)
 if(WITH_QT)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTOUIC ON)
