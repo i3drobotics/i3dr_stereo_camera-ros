@@ -527,7 +527,7 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
   _disparity_pub.publish(disp_msg);
 }
 
-cv::Mat_<uint8_t> rectify(cv::Mat image, const sensor_msgs::CameraInfoConstPtr &msg_camera_info)
+cv::Mat rectify(cv::Mat image, const sensor_msgs::CameraInfoConstPtr &msg_camera_info)
 {
   cv::Mat K, D, R, P;
   cameraInfo_to_KDRP(msg_camera_info, K, D, R, P);
@@ -539,7 +539,7 @@ cv::Mat_<uint8_t> rectify(cv::Mat image, const sensor_msgs::CameraInfoConstPtr &
   cv::initUndistortRectifyMap(K, D, R, P, resol,
                               CV_32FC1, full_map1, full_map2);
 
-  cv::Mat_<uint8_t> image_rect;
+  cv::Mat image_rect;
   cv::remap(image, image_rect, full_map1, full_map2, cv::INTER_CUBIC);
 
   return (image_rect);
@@ -549,7 +549,7 @@ void publish_image(ros::Publisher image_pub, const sensor_msgs::ImageConstPtr &m
 {
   cv_bridge::CvImage out_msg;
   out_msg.header = msg_image->header;
-  out_msg.encoding = sensor_msgs::image_encodings::MONO8;
+  out_msg.encoding = msg_image->encoding;
   out_msg.image = rect_image;
 
   image_pub.publish(out_msg.toImageMsg());
@@ -563,7 +563,19 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
   static const int DPP = 16; // disparities per pixel
   static const double inv_dpp = 1.0 / DPP;
 
-  cv::Mat disparity16_ = stereo_match(left_rect, right_rect);
+  cv::Mat left_rect_mono, right_rect_mono;
+  if (left_rect.type() != CV_8UC1){
+    cv::cvtColor(left_rect, left_rect_mono, CV_BGR2GRAY);
+  } else {
+    left_rect_mono = left_rect.clone();
+  }
+  if (right_rect.type() != CV_8UC1){
+    cv::cvtColor(right_rect, right_rect_mono, CV_BGR2GRAY);
+  } else {
+    right_rect_mono = right_rect.clone();
+  }
+  
+  cv::Mat disparity16_ = stereo_match(left_rect_mono, right_rect_mono);
   if (disparity16_.empty())
   {
     ROS_ERROR("Match unsuccessful. Disparity map is empty!");
@@ -788,15 +800,15 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   model_.fromCameraInfo(msg_left_camera_info, msg_right_camera_info);
 
   cv_bridge::CvImagePtr input_image_left, input_image_right;
-  input_image_left = cv_bridge::toCvCopy(msg_left_image, "mono8");
-  input_image_right = cv_bridge::toCvCopy(msg_right_image, "mono8");
+  input_image_left = cv_bridge::toCvCopy(msg_left_image);
+  input_image_right = cv_bridge::toCvCopy(msg_right_image);
 
   std::string ty = type2str(input_image_left->image.type());
   ROS_INFO("Input image type: %s %dx%d", ty.c_str(), input_image_left->image.cols, input_image_left->image.rows);
 
   //ROS_INFO("Recitifying images...");
-  cv::Mat_<uint8_t> left_rect = rectify(input_image_left->image, msg_left_camera_info);
-  cv::Mat_<uint8_t> right_rect = rectify(input_image_right->image, msg_right_camera_info);
+  cv::Mat left_rect = rectify(input_image_left->image, msg_left_camera_info);
+  cv::Mat right_rect = rectify(input_image_right->image, msg_right_camera_info);
 
   ty = type2str(left_rect.type());
   ROS_INFO("Rectified image type: %s %dx%d", ty.c_str(), left_rect.cols, left_rect.rows);

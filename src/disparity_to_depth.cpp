@@ -107,7 +107,22 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 
 	// sensor_msgs::image_encodings::TYPE_32FC1
 	cv::Mat disparity(disparityMsg->image.height, disparityMsg->image.width, CV_32FC1, const_cast<uchar *>(disparityMsg->image.data.data()));
-	cv::Mat image(camImage->height, camImage->width, CV_8UC1, const_cast<uchar *>(camImage->data.data()));
+
+	cv::Mat color;
+	const std::string &encoding = camImage->encoding;
+	namespace enc = sensor_msgs::image_encodings;
+	if (encoding == enc::MONO8)
+	{
+		color = cv::Mat_<uint8_t>(camImage->height, camImage->width,
+								(uint8_t *)&camImage->data[0],
+								camImage->step);
+	}
+	else if (encoding == enc::BGR8)
+	{
+		color = cv::Mat_<cv::Vec3b>(camImage->height, camImage->width,
+									(cv::Vec3b *)&camImage->data[0],
+									camImage->step);
+	}
 
 	PointCloudRGB::Ptr ptCloudTemp(new PointCloudRGB);
 
@@ -133,47 +148,80 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 	sensor_msgs::PointCloud2Iterator<uchar> iter_g(*points_msg, "g");
 	sensor_msgs::PointCloud2Iterator<uchar> iter_b(*points_msg, "b");
 
+	float wz = Q.at<double>(2, 3);
+	float q03 = Q.at<double>(0, 3);
+	float q13 = Q.at<double>(1, 3);
+	float q32 = Q.at<double>(3, 2);
+	float q33 = Q.at<double>(3, 3);
+	float w, d;
+	uchar b,g,r;
+	uchar intensity;
+	float xyz[3] = {0,0,0};
+
 	float max_d = 0;
+	float max_z = 0;
+	float max_w = 0;
 
 	for (int i = 0; i < disparity.rows; i++)
 	{
 		for (int j = 0; j < disparity.cols; j++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
 		{
-			float d = disparity.at<float>(i, j);
+			d = disparity.at<float>(i, j);
 
-			if (d < 10000){
-
+			if (d != 0 && d != 10000)
+			{
 				if (d > max_d){
 					max_d = d;
 				}
 
-				//float x_index = j - (disparityMsg->image.height/2);
-				//float y_index = i - (disparityMsg->image.width/2);
-				float x_index = j;
-				float y_index = i;
+				w = ((d) * q32) + q33;
+				xyz[0] = ((j) + q03) / w;
+				xyz[1] = ((i) + q13) / w;
+				xyz[2] = wz / w;
 
-				cv::Vec4d homg_pt = _Q * cv::Vec4d((double)x_index, (double)y_index, (double)d, 1.0);
-				float z = (float)homg_pt[2] / (float)homg_pt[3];
-
-				if (z <= _depth_max){
-					depth32f.at<float>(i, j) = z;
+				if (xyz[2] > max_z){
+					max_z = xyz[2];
 				}
-				if (z <= _z_max && _gen_point_cloud){
-					float x = (float)homg_pt[0] / (float)homg_pt[3];
-					float y = (float)homg_pt[1] / (float)homg_pt[3];
-					uchar intensity = image.at<uchar>(i,j);
-					*iter_x = x;
-					*iter_y = y;
-					*iter_z = z;
-					*iter_r = intensity;
-					*iter_g = intensity;
-					*iter_b = intensity;
+				if (w > max_w){
+					max_w = w;
+				}
+
+				if (w > 0 && xyz[2] > 0){ // negative W or Z which is not possible (behind camera)
+					if (color.type() == CV_8UC1){
+						intensity = color.at<uint8_t>(i,j);
+						b = intensity;
+						g = intensity;
+						r = intensity;
+					} else if (color.type() == CV_8UC3){
+						b = color.at<cv::Vec3b>(i,j)[0];
+						g = color.at<cv::Vec3b>(i,j)[1];
+						r = color.at<cv::Vec3b>(i,j)[2];
+					} else {
+						b = 0;
+						g = 0;
+						r = 0;
+						//qDebug() << "Invalid image type. MUST be CV_8UC1 or CV_8UC3";
+					}
+				}
+
+				if (xyz[2] <= _depth_max){
+					depth32f.at<float>(i, j) = xyz[2];
+				}
+				if (xyz[2] <= _z_max && _gen_point_cloud){
+					*iter_x = xyz[0];
+					*iter_y = xyz[1];
+					*iter_z = xyz[2];
+					*iter_r = r;
+					*iter_g = g;
+					*iter_b = b;
 				}
 			}
 		}
 	}
 
 	std::cerr << "max d: " << max_d << std::endl;
+	std::cerr << "max w: " << max_w << std::endl;
+	std::cerr << "max z: " << max_z << std::endl;
 
 	// convert to ROS sensor_msg::Image
 	cv_bridge::CvImage cvDepth(disparityMsg->header, sensor_msgs::image_encodings::TYPE_32FC1, depth32f);
@@ -193,9 +241,9 @@ void callback(const stereo_msgs::DisparityImageConstPtr &disparityMsg, const sen
 		ROS_ERROR("Input type must be disparity=32FC1");
 		return;
 	}
-	if (camImage->encoding.compare(sensor_msgs::image_encodings::MONO8) != 0)
+	if (camImage->encoding.compare(sensor_msgs::image_encodings::MONO8) != 0 && camImage->encoding.compare(sensor_msgs::image_encodings::BGR8) != 0)
 	{
-		ROS_ERROR("Input type must be image=MONO8");
+		ROS_ERROR("Input type must be image=MONO8 or BGR8");
         ROS_ERROR("Input type is: %s",camImage->encoding.c_str());
 		return;
 	}
