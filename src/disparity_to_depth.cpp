@@ -219,9 +219,9 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 		}
 	}
 
-	std::cerr << "max d: " << max_d << std::endl;
-	std::cerr << "max w: " << max_w << std::endl;
-	std::cerr << "max z: " << max_z << std::endl;
+	//std::cerr << "max d: " << max_d << std::endl;
+	//std::cerr << "max w: " << max_w << std::endl;
+	//std::cerr << "max z: " << max_z << std::endl;
 
 	// convert to ROS sensor_msg::Image
 	cv_bridge::CvImage cvDepth(disparityMsg->header, sensor_msgs::image_encodings::TYPE_32FC1, depth32f);

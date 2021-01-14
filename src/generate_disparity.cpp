@@ -441,9 +441,9 @@ Mat stereo_match(Mat left_image, Mat right_image)
   matcher->setDownsampleScale(1); //TODO impliment this better
   matcher->setImages(&left_image, &right_image);
   
-  std::cout << "[generate_disparity] Computing match" << std::endl;
+  //std::cout << "[generate_disparity] Computing match" << std::endl;
   int exitCode = matcher->match();
-  std::cout << "[generate_disparity] Match complete" << std::endl;
+  //std::cout << "[generate_disparity] Match complete" << std::endl;
   if (exitCode == 0)
   {
     matcher->getDisparity(disp);
@@ -512,7 +512,7 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
   disp_msg.f = f;
   disp_msg.T = T;
 
-  ROS_INFO("F: %f, T: %f", disp_msg.f, disp_msg.T);
+  //ROS_INFO("F: %f, T: %f", disp_msg.f, disp_msg.T);
 
   double cx_l = msg_left_camera_info->K[2];
   double cx_r = msg_right_camera_info->K[2];
@@ -581,7 +581,7 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
     ROS_ERROR("Match unsuccessful. Disparity map is empty!");
     return -1;
   }
-  std::cout << "[generate_disparity] Formatting disparity for publishing" << std::endl;
+  //std::cout << "[generate_disparity] Formatting disparity for publishing" << std::endl;
   // Fill in DisparityImage image data, converting to 32-bit float
   sensor_msgs::Image &dimage = disparity.image;
   dimage.height = disparity16_.rows;
@@ -600,8 +600,8 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
   disparity.f = model.right().fx();
   disparity.T = model.baseline();
 
-  ROS_INFO("T: %f", model.baseline());
-  ROS_INFO("F: %f", disparity.f);
+  //ROS_INFO("T: %f", model.baseline());
+  //ROS_INFO("F: %f", disparity.f);
 
   /// @todo Window of (potentially) valid disparities
 
@@ -804,14 +804,14 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   input_image_right = cv_bridge::toCvCopy(msg_right_image);
 
   std::string ty = type2str(input_image_left->image.type());
-  ROS_INFO("Input image type: %s %dx%d", ty.c_str(), input_image_left->image.cols, input_image_left->image.rows);
+  //ROS_INFO("Input image type: %s %dx%d", ty.c_str(), input_image_left->image.cols, input_image_left->image.rows);
 
   //ROS_INFO("Recitifying images...");
   cv::Mat left_rect = rectify(input_image_left->image, msg_left_camera_info);
   cv::Mat right_rect = rectify(input_image_right->image, msg_right_camera_info);
 
   ty = type2str(left_rect.type());
-  ROS_INFO("Rectified image type: %s %dx%d", ty.c_str(), left_rect.cols, left_rect.rows);
+  //ROS_INFO("Rectified image type: %s %dx%d", ty.c_str(), left_rect.cols, left_rect.rows);
 
   // Allocate new disparity image message
   stereo_msgs::DisparityImagePtr disp_msg = boost::make_shared<stereo_msgs::DisparityImage>();
@@ -826,7 +826,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   disp_msg->valid_window.width = 0;
   disp_msg->valid_window.height = 0;
 
-  ROS_INFO("Publishing recitifyed images...");
+  //ROS_INFO("Publishing recitifyed images...");
   publish_image(_rect_l_pub, msg_left_image, left_rect);
   publish_image(_rect_r_pub, msg_right_image, right_rect);
 
@@ -842,7 +842,7 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
 
   
 
-  ROS_INFO("Publishing disparity message...");
+  //ROS_INFO("Publishing disparity message...");
   _disparity_pub.publish(disp_msg);
 
   /*
