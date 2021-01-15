@@ -86,8 +86,6 @@ MatcherI3DRSGM *i3drsgm_matcher;
 
 float _depth_max = 10;
 float _depth_min = 0;
-float _z_max = 10;
-float _z_min = 0;
 
 bool isFirstImagesRecevied = false;
 
@@ -172,94 +170,6 @@ std::string type2str(int type)
   r += (chans + '0');
 
   return r;
-}
-
-//Convert disparity image from opencv Mat to PCL Point Cloud XYZRGB
-PointCloudRGB::Ptr Mat2PCL(cv::Mat image, cv::Mat coords, PointCloudRGBNormal::Ptr normals)
-{
-  //TODO format point cloud to match rows and cols of coords
-  PointCloudRGB::Ptr ptCloudTemp(new PointCloudRGB);
-  PointCloudRGBNormal::Ptr ptCloudNormals(new PointCloudRGBNormal);
-
-  pcl::PointXYZRGB point;
-  pcl::PointXYZRGBNormal pNormal;
-  uint32_t rgb = 0;
-  uchar col = 0;
-
-  point.x = 0;
-  point.y = 0;
-  point.z = 0;
-
-  pNormal.x = 0;
-  pNormal.y = 0;
-  pNormal.z = 0;
-
-  pNormal.normal_x = 0;
-  pNormal.normal_y = 0;
-  pNormal.normal_z = 0;
-
-  rgb = ((int)255) << 16 | ((int)255) << 8 | ((int)255);
-  point.rgb = *reinterpret_cast<float *>(&rgb);
-
-  pNormal.rgb = point.rgb;
-
-  ptCloudTemp->points.push_back(point);
-  ptCloudNormals->points.push_back(pNormal);
-
-  for (int i = 1; i < coords.rows - 1; i++)
-  {
-    float *reconst_ptr = coords.ptr<float>(i);
-    uchar *rgb_ptr = image.ptr<uchar>(i);
-
-    if (!rgb_ptr || !reconst_ptr)
-      return (ptCloudTemp);
-
-    for (int j = 1; j < coords.cols - 1; j++)
-    {
-      if (rgb_ptr[j] == 0)
-        continue;
-
-      point.x = reconst_ptr[3 * j];
-      point.y = reconst_ptr[3 * j + 1];
-      point.z = reconst_ptr[3 * j + 2];
-
-      if (abs(point.x) > 50)
-        continue;
-      if (abs(point.y) > 50)
-        continue;
-      if (point.z > _z_max || point.z < _z_min)
-        continue;
-
-      col = rgb_ptr[j];
-
-      rgb = ((int)col) << 16 | ((int)col) << 8 | ((int)col);
-      point.rgb = *reinterpret_cast<float *>(&rgb);
-
-      //normals
-      float dzdx = (coords.at<float>(i + 1, j) - coords.at<float>(i - 1, j)) / 2.0;
-      float dzdy = (coords.at<float>(i, j + 1) - coords.at<float>(i, j - 1)) / 2.0;
-
-      cv::Vec3f d(-dzdx, -dzdy, 1.0f);
-
-      cv::Vec3f n = cv::normalize(d);
-
-      pNormal.x = point.x;
-      pNormal.y = point.y;
-      pNormal.z = point.z;
-
-      pNormal.rgb = point.rgb;
-
-      pNormal.normal_x = n[0];
-      pNormal.normal_y = n[1];
-      pNormal.normal_z = n[2];
-
-      ptCloudNormals->points.push_back(pNormal);
-
-      ptCloudTemp->points.push_back(point);
-    }
-  }
-  pcl::copyPointCloud(*ptCloudNormals, *normals);
-  return (ptCloudTemp);
 }
 
 bool save_stereo(i3dr_stereo_camera::SaveStereo::Request &req,
@@ -1014,7 +924,7 @@ int main(int argc, char **argv)
   float p1, p2;
   bool interp;
   std::string frame_id, left_camera_calibration_url, right_camera_calibration_url, jr_config_file;
-  float depth_max, depth_min, z_max, z_min;
+  float depth_max, depth_min;
   bool save_points_as_binary;
 
   std::string ns = ros::this_node::getNamespace();
@@ -1113,16 +1023,6 @@ int main(int argc, char **argv)
   {
     _depth_min = depth_min;
     ROS_INFO("depth_min: %f", depth_min);
-  }
-  if (p_nh.getParam("z_max", z_max))
-  {
-    _z_max = z_max;
-    ROS_INFO("z_max: %f", z_max);
-  }
-  if (p_nh.getParam("z_min", z_min))
-  {
-    _z_min = z_min;
-    ROS_INFO("z_min: %f", z_min);
   }
   if (p_nh.getParam("save_pcl_binary", save_points_as_binary))
   {

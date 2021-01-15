@@ -22,6 +22,7 @@
     <arg name="map" default="true" />
     <arg name="glue" default="false" />
     <arg name="depth_max" default="10" />
+    <arg name="depth_min" default="0.01" />
     <arg name="gui" default="false" />
     <arg name="cropByDisp" default="false" />
 
@@ -52,8 +53,8 @@
 
         <!-- maximum depth value (m) -->
         <arg name="depth_max" value="$(arg depth_max)" />
-        <!-- TODO fix issue with i3dr alg giving extra 3D close to the camera -->
-        <arg name="depth_min" value="0.4" />
+        <!-- minimum depth value (m) -->
+        <arg name="depth_min" value="$(arg depth_min)" />
 
         <arg name="split_laser" value="$(arg split_laser)"/>
         <arg name="camera_namespace" value="$(arg camera_namespace)"/>
@@ -79,6 +80,7 @@
     </group>
 
     <arg name="rgb_topic" default="/$(arg camera_namespace)/left/image_rect"/>
+    <arg name="map_base_frame_id" default="$(arg urdf_namespace)_base_link)"/>
 
     <group if="$(arg map)">
         <arg name="map_frame_id" default="scan" />
@@ -90,6 +92,7 @@
             <arg name="camera_model" value="$(arg camera_model)"/>
             <arg name="urdf_namespace" value="$(arg urdf_namespace)"/>
             <arg name="rviz" value="$(arg rviz)" />
+            <arg name="frame_id" value="$(arg map_base_frame_id)" />
             <arg name="map_frame_id" value="$(arg map_frame_id)"/>
             <arg name="grid_size" value="$(arg map_resolution)" />
             <arg name="imu" value="$(arg imu)" />

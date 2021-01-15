@@ -49,7 +49,7 @@ MODIFIED BY: Ben Knight (I3D Robotics)
 image_transport::Publisher _depth_pub;
 ros::Publisher _point_cloud_pub;
 double _depth_max = 100;
-double _z_max = 100;
+double _depth_min = 0;
 bool _gen_point_cloud = true;
 
 typedef message_filters::sync_policies::ApproximateTime<
@@ -131,22 +131,7 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 	float disp_min_val = disparityMsg->min_disparity;
 	float disp_max_val = disparityMsg->max_disparity;
 
-	sensor_msgs::PointCloud2Ptr points_msg = boost::make_shared<sensor_msgs::PointCloud2>();
-	points_msg->header = disparityMsg->header;
-	points_msg->height = disparityMsg->image.height;
-	points_msg->width = disparityMsg->image.width;
-	points_msg->is_bigendian = false;
-	points_msg->is_dense = false; // there may be invalid points
-
-	sensor_msgs::PointCloud2Modifier pcd_modifier(*points_msg);
-  	pcd_modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
-
-	sensor_msgs::PointCloud2Iterator<float> iter_x(*points_msg, "x");
-	sensor_msgs::PointCloud2Iterator<float> iter_y(*points_msg, "y");
-	sensor_msgs::PointCloud2Iterator<float> iter_z(*points_msg, "z");
-	sensor_msgs::PointCloud2Iterator<uchar> iter_r(*points_msg, "r");
-	sensor_msgs::PointCloud2Iterator<uchar> iter_g(*points_msg, "g");
-	sensor_msgs::PointCloud2Iterator<uchar> iter_b(*points_msg, "b");
+	pcl::PointXYZRGB point;
 
 	float wz = Q.at<double>(2, 3);
 	float q03 = Q.at<double>(0, 3);
@@ -164,7 +149,7 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 
 	for (int i = 0; i < disparity.rows; i++)
 	{
-		for (int j = 0; j < disparity.cols; j++, ++iter_x, ++iter_y, ++iter_z, ++iter_r, ++iter_g, ++iter_b)
+		for (int j = 0; j < disparity.cols; j++)
 		{
 			d = disparity.at<float>(i, j);
 
@@ -187,33 +172,33 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 				}
 
 				if (w > 0 && xyz[2] > 0){ // negative W or Z which is not possible (behind camera)
-					if (color.type() == CV_8UC1){
-						intensity = color.at<uint8_t>(i,j);
-						b = intensity;
-						g = intensity;
-						r = intensity;
-					} else if (color.type() == CV_8UC3){
-						b = color.at<cv::Vec3b>(i,j)[0];
-						g = color.at<cv::Vec3b>(i,j)[1];
-						r = color.at<cv::Vec3b>(i,j)[2];
-					} else {
-						b = 0;
-						g = 0;
-						r = 0;
-						//qDebug() << "Invalid image type. MUST be CV_8UC1 or CV_8UC3";
+					if (xyz[2] <= _depth_max && xyz[2] >= _depth_min){
+						if (color.type() == CV_8UC1){
+							intensity = color.at<uint8_t>(i,j);
+							b = intensity;
+							g = intensity;
+							r = intensity;
+						} else if (color.type() == CV_8UC3){
+							b = color.at<cv::Vec3b>(i,j)[0];
+							g = color.at<cv::Vec3b>(i,j)[1];
+							r = color.at<cv::Vec3b>(i,j)[2];
+						} else {
+							b = 0;
+							g = 0;
+							r = 0;
+							//qDebug() << "Invalid image type. MUST be CV_8UC1 or CV_8UC3";
+						}
+						depth32f.at<float>(i, j) = xyz[2];
+						if (_gen_point_cloud){
+							point.x = xyz[0];
+							point.y = xyz[1];
+							point.z = xyz[2];
+							point.r = r;
+							point.g = g;
+							point.b = b;
+							ptCloudTemp->push_back(point);
+						}
 					}
-				}
-
-				if (xyz[2] <= _depth_max){
-					depth32f.at<float>(i, j) = xyz[2];
-				}
-				if (xyz[2] <= _z_max && _gen_point_cloud){
-					*iter_x = xyz[0];
-					*iter_y = xyz[1];
-					*iter_z = xyz[2];
-					*iter_r = r;
-					*iter_g = g;
-					*iter_b = b;
 				}
 			}
 		}
@@ -227,6 +212,14 @@ void dispInfoMsg2depthMsg(const stereo_msgs::DisparityImageConstPtr &disparityMs
 	cv_bridge::CvImage cvDepth(disparityMsg->header, sensor_msgs::image_encodings::TYPE_32FC1, depth32f);
 	sensor_msgs::Image depthMsg;
 	cvDepth.toImageMsg(depthMsg);
+
+	sensor_msgs::PointCloud2 points_msg;
+	pcl::toROSMsg(*ptCloudTemp, points_msg);
+	points_msg.header = disparityMsg->header;
+	points_msg.height = 1;
+	points_msg.width = ptCloudTemp->size();
+	points_msg.is_bigendian = false;
+	points_msg.is_dense = false; // there may be invalid points
 
 	_depth_pub.publish(depthMsg);
 	if (_gen_point_cloud){
@@ -259,7 +252,7 @@ int main(int argc, char **argv)
 
 	std::string ns = ros::this_node::getNamespace();
 
-	double depth_max, z_max;
+	double depth_max, depth_min;
 	bool gen_point_cloud;
 
 	if (p_nh.getParam("depth_max", depth_max))
@@ -267,10 +260,10 @@ int main(int argc, char **argv)
 		_depth_max = depth_max;
 		ROS_INFO("depth_max: %f", _depth_max);
 	}
-	if (p_nh.getParam("z_max", z_max))
+	if (p_nh.getParam("depth_min", depth_min))
 	{
-		_z_max = z_max;
-		ROS_INFO("z_max: %f", _z_max);
+		_depth_min = depth_min;
+		ROS_INFO("depth_min: %f", _depth_min);
 	}
 	if (p_nh.getParam("gen_point_cloud", gen_point_cloud))
 	{

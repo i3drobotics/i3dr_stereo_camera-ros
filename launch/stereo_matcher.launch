@@ -111,10 +111,6 @@
   <arg name="depth_max" default="10" />
   <arg name="depth_min" default="0" />
 
-  <!-- maximum and minimum distance for point cloud -->
-  <arg name="z_max" default="$(arg depth_max)" />
-  <arg name="z_min" default="$(arg depth_min)" />
-
   <!-- crop image by disparity map -->
   <arg name="cropByDisp" default="false" />
 
@@ -196,7 +192,7 @@
       <remap from="left/camera_info" to="$(arg left_camera_info_topic)"/>
       <remap from="right/camera_info" to="$(arg right_camera_info_topic)"/>
       <param name="depth_max" value="$(arg depth_max)" />
-      <param name="z_max" value="$(arg z_max)" />
+      <param name="depth_min" value="$(arg depth_min)" />
       <param name="gen_point_cloud" value="true" />
     </node>
   </group>
