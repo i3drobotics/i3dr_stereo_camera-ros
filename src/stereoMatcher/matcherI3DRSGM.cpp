@@ -22,11 +22,12 @@ void MatcherI3DRSGM::setupDefaultMatcher(void)
     matcher->enableOcclusionDetection(false);
     matcher->enableOccInterpol(false);
     matcher->setNoDataValue(-10000);
-#ifdef WITH_CUDA
     matcher->enableCPU(false);
-#else
-    matcher->enableCPU(true);
-#endif
+//#ifdef WITH_CUDA
+//    matcher->enableCPU(false);
+//#else
+//    matcher->enableCPU(true);
+//#endif
 }
 
 int MatcherI3DRSGM::forwardMatch()
