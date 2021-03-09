@@ -575,7 +575,7 @@ cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l)
   double cxr = p_r.at<double>(0, 2);
   double cy = p_l.at<double>(1, 2);
   double fx = m_l.at<double>(0, 0);
-  double fy = m_l.at<double>(1, 1);
+  //double fy = m_l.at<double>(1, 1);
 
   double p14 = p_r.at<double>(0, 3);
   double T = p14 / fx;
