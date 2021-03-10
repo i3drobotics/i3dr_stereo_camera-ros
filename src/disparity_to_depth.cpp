@@ -70,7 +70,7 @@ cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l)
 	double fy = m_l.at<double>(1, 1);
 
 	double p14 = p_r.at<double>(0, 3);
-	double T = p14 / fx;
+	double T = -p14 / fx;
 	double q33 = -(cx - cxr) / T;
 
 	q.at<double>(0, 0) = 1.0;
@@ -78,7 +78,7 @@ cv::Mat calc_q(cv::Mat m_l, cv::Mat p_r, cv::Mat p_l)
 	q.at<double>(1, 1) = 1.0;
 	q.at<double>(1, 3) = -cy;
 	q.at<double>(2, 3) = fx;
-	q.at<double>(3, 2) = -1.0 / T;
+	q.at<double>(3, 2) = 1.0 / T;
 	q.at<double>(3, 3) = q33;
 
 	return q;

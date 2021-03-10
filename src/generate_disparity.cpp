@@ -369,74 +369,6 @@ Mat stereo_match(Mat left_image, Mat right_image)
   return disp;
 }
 
-void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range, const sensor_msgs::CameraInfoConstPtr &msg_left_camera_info, const sensor_msgs::CameraInfoConstPtr &msg_right_camera_info)
-{
-  double min, max; 
-  cv::minMaxLoc(disparity, &min, &max);
-
-  stereo_msgs::DisparityImage disp_msg;
-  //disp_msg.min_disparity = min_disparity;
-  //disp_msg.max_disparity = min_disparity + disparity_range - 1;
-  disp_msg.min_disparity = min;
-  disp_msg.max_disparity = max;
-
-  cv::Mat Kl, Dl, Rl, Pl;
-  cv::Mat Kr, Dr, Rr, Pr;
-
-  cameraInfo_to_KDRP(msg_left_camera_info, Kl, Dl, Rl, Pl);
-  cameraInfo_to_KDRP(msg_right_camera_info, Kr, Dr, Rr, Pr);
-
-  // should be safe
-  disp_msg.valid_window.x_offset = 0;
-  disp_msg.valid_window.y_offset = 0;
-  disp_msg.valid_window.width = 0;
-  disp_msg.valid_window.height = 0;
-  disp_msg.T = 0;
-  disp_msg.f = 0;
-  disp_msg.delta_d = 0;
-  disp_msg.header.stamp = ros::Time::now();
-  disp_msg.header.frame_id = _frame_id;
-
-  sensor_msgs::Image &dimage = disp_msg.image;
-  dimage.width = disparity.size().width;
-  dimage.height = disparity.size().height;
-  dimage.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
-  dimage.step = dimage.width * sizeof(float);
-  dimage.data.resize(dimage.step * dimage.height);
-  cv::Mat_<float> dmat(dimage.height, dimage.width, (float *)&dimage.data[0], dimage.step);
-
-  static const int DPP = 16; // disparities per pixel
-  static const double inv_dpp = 1.0 / DPP;
-
-  double cxR = Pr.at<double>(0, 2);
-  double cxL = Pl.at<double>(0, 2);
-  double fx = Kl.at<double>(0, 0);
-
-  double T = Pr.at<double>(0, 3) / Kl.at<double>(0, 0); //baseline = P14 / fx
-
-  disparity.convertTo(dmat, dmat.type(), inv_dpp, -(cxL - cxR));
-  ROS_ASSERT(dmat.data == &dimage.data[0]);
-
-  disp_msg.delta_d = inv_dpp;
-
-  disp_msg.f = fx;
-  disp_msg.T = T;
-
-  //ROS_INFO("F: %f, T: %f", disp_msg.f, disp_msg.T);
-
-  double cx_l = msg_left_camera_info->K[2];
-  double cx_r = msg_right_camera_info->K[2];
-  if (cx_l != cx_r)
-  {
-    cv::Mat_<float> disp_image(disp_msg.image.height, disp_msg.image.width,
-                               reinterpret_cast<float *>(&disp_msg.image.data[0]),
-                               disp_msg.image.step);
-    cv::subtract(disp_image, cv::Scalar(cx_l - cx_r), disp_image);
-  }
-
-  _disparity_pub.publish(disp_msg);
-}
-
 cv::Mat rectify(cv::Mat image, const sensor_msgs::CameraInfoConstPtr &msg_camera_info)
 {
   cv::Mat K, D, R, P;
@@ -467,7 +399,7 @@ void publish_image(ros::Publisher image_pub, const sensor_msgs::ImageConstPtr &m
 
 int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
                      const image_geometry::StereoCameraModel &model,
-                     stereo_msgs::DisparityImage &disparity)
+                     stereo_msgs::DisparityImage &disparityMsg)
 {
   // Fixed-point disparity is 16 times the true value: d = d_fp / 16.0 = x_l - x_r.
   static const int DPP = 16; // disparities per pixel
@@ -485,42 +417,43 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
     right_rect_mono = right_rect.clone();
   }
   
-  cv::Mat disparity16_ = stereo_match(left_rect_mono, right_rect_mono);
-  if (disparity16_.empty())
+  cv::Mat disparity = stereo_match(left_rect_mono, right_rect_mono);
+  if (disparity.empty())
   {
     ROS_ERROR("Match unsuccessful. Disparity map is empty!");
     return -1;
   }
   //std::cout << "[generate_disparity] Formatting disparity for publishing" << std::endl;
   // Fill in DisparityImage image data, converting to 32-bit float
-  sensor_msgs::Image &dimage = disparity.image;
-  dimage.height = disparity16_.rows;
-  dimage.width = disparity16_.cols;
+  sensor_msgs::Image &dimage = disparityMsg.image;
+  dimage.height = disparity.rows;
+  dimage.width = disparity.cols;
   dimage.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
   dimage.step = dimage.width * sizeof(float);
   dimage.data.resize(dimage.step * dimage.height);
   cv::Mat_<float> dmat(dimage.height, dimage.width, (float *)&dimage.data[0], dimage.step);
   // We convert from fixed-point to float disparity and also adjust for any x-offset between
   // the principal points: d = d_fp*inv_dpp - (cx_l - cx_r)
-  disparity16_.convertTo(dmat, dmat.type(), inv_dpp, -(model.left().cx() - model.right().cx()));
+  //disparity.convertTo(dmat, dmat.type(), inv_dpp, -(model.left().cx() - model.right().cx()));
+  disparity.convertTo(dmat, dmat.type(), inv_dpp);
   ROS_ASSERT(dmat.data == &dimage.data[0]);
   /// @todo is_bigendian? :)
 
   // Stereo parameters
-  disparity.f = model.right().fx();
-  disparity.T = model.baseline();
+  disparityMsg.f = model.left().fx();
+  disparityMsg.T = model.baseline();
 
   //ROS_INFO("T: %f", model.baseline());
   //ROS_INFO("F: %f", disparity.f);
 
   /// @todo Window of (potentially) valid disparities
 
-  disparity.min_disparity = disparity.T * disparity.f / _depth_max;
-  disparity.max_disparity = disparity.T * disparity.f / _depth_min;
-  dmat.setTo(model.MISSING_Z, dmat < disparity.min_disparity);
-  dmat.setTo(model.MISSING_Z, dmat > disparity.max_disparity);
+  disparityMsg.min_disparity = disparityMsg.T * disparityMsg.f / _depth_max;
+  disparityMsg.max_disparity = disparityMsg.T * disparityMsg.f / _depth_min;
+  dmat.setTo(model.MISSING_Z, dmat < disparityMsg.min_disparity);
+  dmat.setTo(model.MISSING_Z, dmat > disparityMsg.max_disparity);
 
-  disparity.delta_d = inv_dpp;
+  disparityMsg.delta_d = inv_dpp;
   return 0;
 }
 
