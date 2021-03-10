@@ -408,18 +408,18 @@ void publish_disparity(cv::Mat disparity, int min_disparity, int disparity_range
   static const int DPP = 16; // disparities per pixel
   static const double inv_dpp = 1.0 / DPP;
 
-  double cxR = Kr.at<double>(0, 2);
-  double cxL = Kl.at<double>(0, 2);
-  double f = Kl.at<double>(0, 0);
+  double cxR = Pr.at<double>(0, 2);
+  double cxL = Pl.at<double>(0, 2);
+  double fx = Kl.at<double>(0, 0);
 
-  double T = Pr.at<double>(0, 3) / Kr.at<double>(0, 0); //baseline = P14 / f
+  double T = Pr.at<double>(0, 3) / Kl.at<double>(0, 0); //baseline = P14 / fx
 
   disparity.convertTo(dmat, dmat.type(), inv_dpp, -(cxL - cxR));
   ROS_ASSERT(dmat.data == &dimage.data[0]);
 
   disp_msg.delta_d = inv_dpp;
 
-  disp_msg.f = f;
+  disp_msg.f = fx;
   disp_msg.T = T;
 
   //ROS_INFO("F: %f, T: %f", disp_msg.f, disp_msg.T);
@@ -450,7 +450,7 @@ cv::Mat rectify(cv::Mat image, const sensor_msgs::CameraInfoConstPtr &msg_camera
                               CV_32FC1, full_map1, full_map2);
 
   cv::Mat image_rect;
-  cv::remap(image, image_rect, full_map1, full_map2, cv::INTER_CUBIC);
+  cv::remap(image, image_rect, full_map1, full_map2, cv::INTER_CUBIC, cv::BORDER_CONSTANT);
 
   return (image_rect);
 }
@@ -720,7 +720,10 @@ void imageCb(const sensor_msgs::ImageConstPtr &msg_left_image, const sensor_msgs
   cv::Mat left_rect = rectify(input_image_left->image, msg_left_camera_info);
   cv::Mat right_rect = rectify(input_image_right->image, msg_right_camera_info);
 
-  ty = type2str(left_rect.type());
+  //cv::Mat left_rect = input_image_left->image;
+  //cv::Mat right_rect = input_image_right->image;
+
+  //ty = type2str(left_rect.type());
   //ROS_INFO("Rectified image type: %s %dx%d", ty.c_str(), left_rect.cols, left_rect.rows);
 
   // Allocate new disparity image message
