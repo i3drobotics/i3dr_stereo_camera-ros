@@ -20,9 +20,10 @@ class yaml2CameraInfoNode:
             CameraInfo, queue_size=10)
 
         self.yaml_file = rospy.get_param(
-            'camera_info_url',
+            '~camera_info_url',
             '/home/bknight/catkin_ws/src/i3dr_titania-ros/calibration/6465696d6f736i/left.yaml'
         )
+        print(self.yaml_file)
 
         # Load data from file
         with open(self.yaml_file, "r") as file_handle:
@@ -41,7 +42,7 @@ class yaml2CameraInfoNode:
         # subscribed Topic
         self.subscriber = rospy.Subscriber(
             "/image_raw",
-            Image, self.image_callback, queue_size=1)
+            Image, self.image_callback, queue_size=10)
 
     def image_callback(self, image_msg):
         self.camera_info_msg.header = image_msg.header
