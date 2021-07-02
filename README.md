@@ -5,7 +5,7 @@ This is the generic stereo camera package for use with Industial 3D Robotics cam
 This package also includes all the nodes needed for stereo matching with the I3D Stereo Matcher.
 
 ## Status
-![ROS Build](https://github.com/i3drobotics/i3dr_stereo_camera-ros/workflows/ROS%20Build/badge.svg?event=push)
+[![ROS Build](https://github.com/i3drobotics/i3dr_stereo_camera-ros/actions/workflows/ros-build.yml/badge.svg)](https://github.com/i3drobotics/i3dr_stereo_camera-ros/actions/workflows/ros-build.yml)
 
 ## Build
 
