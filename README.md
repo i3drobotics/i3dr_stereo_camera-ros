@@ -28,9 +28,12 @@ catkin_make -DWITH_CUDA=ON
 ```
 
 ### I3DR Stereo Matcher
-
+Install I3DRSGM support package:
+```
+curl https://github.com/i3drobotics/phobosIntegration/releases/download/v1.0.54/Phobos-1.0.54-x86_64_reducedTemplates.deb > i3drsgm.deb
+sudo dpkg -i i3drsgm.deb
+```
 To build with the I3DR Stereo Matcher use the following command:
-
 ``` bash
 catkin_make -DWITH_I3DRSGM=ON
 ```
@@ -42,7 +45,7 @@ export CUDA_CACHE_DISABLE=0
 Contact info@i3drobotics.com for a license to use this matcher. 
 We will provide you with a license file that should be placed in the following folder after building the workspace:
 ```
-/path/to/repo/devel/lib/i3dr_stereo_camera/yourlicense.lic
+~/catkin_ws/devel/lib/i3dr_stereo_camera/yourlicense.lic
 ```
 
 ## Calibration
