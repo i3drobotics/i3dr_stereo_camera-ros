@@ -11,7 +11,7 @@ void MatcherOpenCVSGBM::init(void)
 
 void MatcherOpenCVSGBM::setupDefaultMatcher(void)
 {
-  matcher = cv::StereoSGBM::create(64, 9);
+  matcher = cv::StereoSGBM::create(64, 9, 5);
 }
 
 int MatcherOpenCVSGBM::forwardMatch()
