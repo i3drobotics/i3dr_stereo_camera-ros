@@ -15,6 +15,7 @@ This package also includes all the nodes needed for stereo matching with the I3D
 cd /path/to/repo
 catkin_make
 ```
+Note: Will build with I3DRSGM support by default. To disable this, pass -DWITH_I3DRSGM=OFF to catkin_make.
 
 ### CUDA
 There is an option to build the stereo matcher with CUDA. This will unlock some extra matchers and run the block matcher on the GPU.

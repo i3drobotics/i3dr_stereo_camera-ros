@@ -36,7 +36,7 @@ if (WITH_CUDA)
 endif()
 
 # build with i3dr algorithm: 'catkin_make -DWITH_I3DRSGM=ON'
-option(WITH_I3DRSGM "Use I3DR Matching algorithm" OFF)
+option(WITH_I3DRSGM "Use I3DR Matching algorithm" ON)
 if (WITH_I3DRSGM)
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 	find_package(Phobos REQUIRED)
