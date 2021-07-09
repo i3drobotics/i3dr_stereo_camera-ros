@@ -11,7 +11,7 @@
 
 // OpenCV
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 
 // Point Cloud Library

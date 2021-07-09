@@ -406,12 +406,12 @@ int processDisparity(const cv::Mat &left_rect, const cv::Mat &right_rect,
 
   cv::Mat left_rect_mono, right_rect_mono;
   if (left_rect.type() != CV_8UC1){
-    cv::cvtColor(left_rect, left_rect_mono, CV_BGR2GRAY);
+    cv::cvtColor(left_rect, left_rect_mono, COLOR_BGR2GRAY);
   } else {
     left_rect_mono = left_rect.clone();
   }
   if (right_rect.type() != CV_8UC1){
-    cv::cvtColor(right_rect, right_rect_mono, CV_BGR2GRAY);
+    cv::cvtColor(right_rect, right_rect_mono, COLOR_BGR2GRAY);
   } else {
     right_rect_mono = right_rect.clone();
   }

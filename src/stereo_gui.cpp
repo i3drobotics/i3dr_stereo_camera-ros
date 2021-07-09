@@ -66,7 +66,7 @@ void updateGUIImage(const sensor_msgs::ImageConstPtr &msg_image, QGraphicsScene 
     cv::Mat image;
     image = cv_bridge::toCvCopy(msg_image)->image;
     cv::Mat image_bgr;
-    cvtColor(image, image_bgr, CV_GRAY2BGR);
+    cvtColor(image, image_bgr, COLOR_GRAY2BGR);
     stereoGUI->updateImage(image_bgr,gs);
 }
 
