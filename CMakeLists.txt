@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Boost REQUIRED COMPONENTS thread system)
 
-option(WITH_QT "Build QT Application" ON)
+option(WITH_QT "Build QT Application" OFF)
 if(WITH_QT)
 	set(CMAKE_AUTOMOC ON)
 	set(CMAKE_AUTOUIC ON)
@@ -45,8 +45,10 @@ if (WITH_I3DRSGM)
 		message(FATAL_ERROR "Failed to load Phobos library for I3DRSGM.")
 	endif()
 else (WITH_I3DRSGM)
-	# OpenCV 3.3.1 Required for I3DR stereo algorithms
-	find_package(OpenCV 3 REQUIRED)
+	find_package(OpenCV 3)
+	if (NOT OpenCV_FOUND)
+		find_package(OpenCV 4 REQUIRED)
+	endif()
 endif()
 
 find_package(PCL 1.2 REQUIRED)
