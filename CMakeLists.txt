@@ -88,26 +88,24 @@ catkin_package(
 link_directories(
 	${PCL_LIBRARY_DIRS}
 	${CMAKE_CURRENT_SOURCE_DIR}/bin
-	)
+)
 
 add_definitions(${PCL_DEFINITIONS})
 
-
-add_executable(
-	init_stereo_matchers src/init_stereo_matchers.cpp 
-	src/stereoMatcher/abstractStereoMatcher.cpp 
-	src/stereoMatcher/I3DRSGM.cpp 
-	src/stereoMatcher/matcherI3DRSGM.cpp 
-)
-target_link_libraries(
-	init_stereo_matchers
-	${Phobos_LIBRARIES}
-	${catkin_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	cudaMem
-)
-
 if (WITH_I3DRSGM)
+	add_executable(
+		init_stereo_matchers src/init_stereo_matchers.cpp 
+		src/stereoMatcher/abstractStereoMatcher.cpp 
+		src/stereoMatcher/I3DRSGM.cpp 
+		src/stereoMatcher/matcherI3DRSGM.cpp 
+	)
+	target_link_libraries(
+		init_stereo_matchers
+		${Phobos_LIBRARIES}
+		${catkin_LIBRARIES}
+		${OpenCV_LIBRARIES}
+		cudaMem
+	)
 	if (WITH_CUDA)
 		add_executable(
 			generate_disparity src/generate_disparity.cpp 
@@ -149,6 +147,17 @@ if (WITH_I3DRSGM)
 	endif()
 else (WITH_I3DRSGM)
 	message(WARNING "I3DR matching library not found. Will not be able to generate disparity with I3DR matching algorithm (2)")
+	add_executable(
+		init_stereo_matchers src/init_stereo_matchers.cpp 
+		src/stereoMatcher/abstractStereoMatcher.cpp 
+		src/stereoMatcher/matcherI3DRSGM.cpp 
+	)
+	target_link_libraries(
+		init_stereo_matchers
+		${catkin_LIBRARIES}
+		${OpenCV_LIBRARIES}
+		cudaMem
+	)
 	if (WITH_CUDA)
 		add_executable(
 			generate_disparity src/generate_disparity.cpp 
@@ -161,7 +170,6 @@ else (WITH_I3DRSGM)
 		)
 		target_link_libraries(
 			generate_disparity
-			${Phobos_LIBRARIES}
 			${catkin_LIBRARIES}
 			${OpenCV_LIBRARIES}
 			${PCL_LIBRARIES}
@@ -176,7 +184,6 @@ else (WITH_I3DRSGM)
 		)
 		target_link_libraries(
 			generate_disparity
-			${Phobos_LIBRARIES}
 			${catkin_LIBRARIES}
 			${OpenCV_LIBRARIES}
 			${PCL_LIBRARIES}
