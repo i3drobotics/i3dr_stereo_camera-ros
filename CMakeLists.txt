@@ -92,20 +92,22 @@ link_directories(
 
 add_definitions(${PCL_DEFINITIONS})
 
+
+add_executable(
+	init_stereo_matchers src/init_stereo_matchers.cpp 
+	src/stereoMatcher/abstractStereoMatcher.cpp 
+	src/stereoMatcher/I3DRSGM.cpp 
+	src/stereoMatcher/matcherI3DRSGM.cpp 
+)
+target_link_libraries(
+	init_stereo_matchers
+	${Phobos_LIBRARIES}
+	${catkin_LIBRARIES}
+	${OpenCV_LIBRARIES}
+	cudaMem
+)
+
 if (WITH_I3DRSGM)
-	add_executable(
-		init_stereo_matchers src/init_stereo_matchers.cpp 
-		src/stereoMatcher/abstractStereoMatcher.cpp 
-		src/stereoMatcher/I3DRSGM.cpp 
-		src/stereoMatcher/matcherI3DRSGM.cpp 
-	)
-	target_link_libraries(
-		init_stereo_matchers
-		${Phobos_LIBRARIES}
-		${catkin_LIBRARIES}
-		${OpenCV_LIBRARIES}
-		cudaMem
-	)
 	if (WITH_CUDA)
 		add_executable(
 			generate_disparity src/generate_disparity.cpp 
@@ -230,7 +232,5 @@ target_link_libraries(
 
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(rectify ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-if (WITH_I3DRSGM)
-	add_dependencies(init_stereo_matchers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-endif()
+add_dependencies(init_stereo_matchers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(generate_disparity ${PROJECT_NAME}_gencfg)
