@@ -29,50 +29,13 @@ using namespace cv;
 
 AbstractStereoMatcher *matcher = nullptr;
 
-int _min_disparity = 9;
-int _disparity_range = 64;
-int _correlation_window_size = 15;
-int _uniqueness_ratio = 15;
-int _texture_threshold = 10;
-int _speckle_size = 100;
-int _speckle_range = 4;
-int _disp12MaxDiff = 0;
-float _p1 = 200;
-float _p2 = 400;
-bool _interp = false;
-int _preFilterCap = 31;
-int _preFilterSize = 9;
-
 std::string _jr_config_file = "";
-
-void updateMatcher()
-{
-  std::cout << "Updating matcher parameters..." << std::endl;
-
-  matcher->setDisparityRange(_disparity_range);
-  matcher->setWindowSize(_correlation_window_size);
-  matcher->setMinDisparity(_min_disparity);
-  matcher->setUniquenessRatio(_uniqueness_ratio);
-  matcher->setSpeckleFilterRange(_speckle_range);
-  matcher->setSpeckleFilterWindow(_speckle_size);
-  matcher->setPreFilterCap(_preFilterCap);
-  matcher->setP1(_p1);
-  matcher->setP2(_p2);
-  matcher->setTextureThreshold(_texture_threshold);
-  matcher->setPreFilterSize(_preFilterSize);
-  matcher->setInterpolation(_interp);
-  //bool occlusion = false;
-  //matcher->setOcclusionDetection(_interp);
-
-  std::cout << "Matcher parameters updated." << std::endl;
-}
 
 void init_matcher(cv::Size image_size)
 {
   #ifdef WITH_I3DRSGM
     matcher = new MatcherI3DRSGM(_jr_config_file, image_size);
   #endif
-  updateMatcher();
 }
 
 void run()
