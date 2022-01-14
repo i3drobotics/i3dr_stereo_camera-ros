@@ -16,6 +16,7 @@
 
 #include <boost/filesystem.hpp>
 
+#include "stereoMatcher/abstractStereoMatcher.h"
 #ifdef WITH_I3DRSGM
 #include <stereoMatcher/matcherI3DRSGM.h>
 #endif
