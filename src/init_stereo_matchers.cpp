@@ -76,25 +76,25 @@ void init_matcher(cv::Size image_size)
 
 void run()
 {
-  cv::Mat left = cv::zeros(cv::Size(10,10), CV_8UC1);
-  cv::Mat right = cv::zeros(cv::Size(10,10), CV_8UC1);
+  cv::Mat left = cv::Mat::zeros(cv::Size(10,10), CV_8UC1);
+  cv::Mat right = cv::Mat::zeros(cv::Size(10,10), CV_8UC1);
   
-  cv::Mat disp;
-  cv::Size image_size = cv::Size(left_image.size().width, left_image.size().height);
-  cv::Mat(image_size, CV_32F).copyTo(disp);
+  cv::Mat disparity;
+  cv::Size image_size = cv::Size(left.size().width, left.size().height);
+  cv::Mat(image_size, CV_32F).copyTo(disparity);
   
   ROS_INFO("Initalising matcher...");
   init_matcher(image_size);
-  matcher->setImages(&left_image, &right_image);
+  matcher->setImages(&left, &right);
   int exitCode = matcher->match();
   if (exitCode != 0)
   {
     ROS_ERROR("Exit code:%d", exitCode);
     ROS_ERROR("Failed to compute stereo match");
     ROS_ERROR("Please check parameters are valid.");
-    return
+    return;
   }
-  matcher->getDisparity(disp);
+  matcher->getDisparity(disparity);
   if (disparity.empty())
   {
     ROS_ERROR("Failed to initalise, empty disparity result.");
