@@ -230,5 +230,7 @@ target_link_libraries(
 
 add_dependencies(generate_disparity ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 add_dependencies(rectify ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(init_stereo_matchers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+if (WITH_I3DRSGM)
+	add_dependencies(init_stereo_matchers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+endif()
 add_dependencies(generate_disparity ${PROJECT_NAME}_gencfg)
