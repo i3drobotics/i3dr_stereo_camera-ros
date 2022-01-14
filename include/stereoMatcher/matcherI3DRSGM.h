@@ -12,6 +12,8 @@ public:
     {
         init();
     }
+    
+    void setDefaultMatcherParams(void);
 
     int forwardMatch(void);
     int backwardMatch(void);
@@ -37,7 +39,6 @@ public:
 private:
 
     void init(void);
-    void setupDefaultMatcher(void);
 
     std::string param_file_;
     std::string tmp_param_file_ = "tmp.param";

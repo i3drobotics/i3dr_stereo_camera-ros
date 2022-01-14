@@ -5,12 +5,12 @@ void MatcherI3DRSGM::init(void)
     tmp_param_file_ = "tmp.param";
     matcher = new I3DRSGM(tmp_param_file_,param_file_);
 
-    setupDefaultMatcher();
+    //setupDefaultMatcher();
     cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
     cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
 }
 
-void MatcherI3DRSGM::setupDefaultMatcher(void)
+void MatcherI3DRSGM::setDefaultMatcherParams(void)
 {
     //setOcclusionDetection(false);
     //matcher->enableOccInterpol(false);

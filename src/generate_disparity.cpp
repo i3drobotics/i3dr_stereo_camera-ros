@@ -276,6 +276,7 @@ void init_matcher(cv::Size image_size)
 #endif
 #ifdef WITH_I3DRSGM
   i3drsgm_matcher = new MatcherI3DRSGM(_jr_config_file, image_size);
+  i3drsgm_matcher->setDefaultMatcherParams();
 #endif
 
   if (_stereo_algorithm == CV_StereoBM)

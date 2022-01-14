@@ -150,7 +150,6 @@ else (WITH_I3DRSGM)
 	add_executable(
 		init_stereo_matchers src/init_stereo_matchers.cpp 
 		src/stereoMatcher/abstractStereoMatcher.cpp 
-		src/stereoMatcher/matcherI3DRSGM.cpp 
 	)
 	target_link_libraries(
 		init_stereo_matchers
