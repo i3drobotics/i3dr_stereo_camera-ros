@@ -10,7 +10,7 @@ void MatcherI3DRSGM::init(void)
     cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
 }
 
-void MatcherI3DRSGM::setupDefaultMatcher(void)
+void MatcherI3DRSGM::setDefaultMatcherParams(void)
 {
     //setOcclusionDetection(false);
     //matcher->enableOccInterpol(false);
