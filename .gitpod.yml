@@ -1,2 +1,11 @@
 image:
   file: .gitpod.Dockerfile
+  
+tasks:
+  - name: Setup catkin ws
+    init: |
+      ln -s /workspace/i3dr_stereo_camera-ros ~/catkin_ws/src/i3dr_stereo_camera-ros
+      cd ~/catkin_ws
+      rosdep install --from-paths src --ignore-src -r -y
+      source devel/setup.sh
+    command: catkin_make
