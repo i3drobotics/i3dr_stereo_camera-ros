@@ -4,7 +4,7 @@ FROM osrf/ros:melodic-desktop-full
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN yes | unminimize \
-    && install-packages \
+    && apt-get install -y && \
         zip \
         unzip \
         bash-completion \
