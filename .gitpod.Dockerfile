@@ -6,12 +6,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y \
         nano \
+        software-properties-common \
         sudo && \
     rm -rf /var/lib/apt/lists/*
 
 ### Git ###
-RUN add-apt-repository -y ppa:git-core/ppa \
-    && install-packages git git-lfs
+RUN add-apt-repository -y ppa:git-core/ppa && \
+    apt-get install -y git git-lfs
 
 ### Gitpod user ###
 # '-l': see https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
@@ -34,7 +35,7 @@ RUN sudo echo "Running 'sudo' for Gitpod: success" && \
 ### Install environment packages ###
 RUN sudo apt-get update && \
     sudo apt-get install -y \
-    wget git \
+    wget \
     ca-certificates \
     curl \
     gnupg \
