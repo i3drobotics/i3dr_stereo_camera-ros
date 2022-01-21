@@ -3,33 +3,11 @@ FROM osrf/ros:melodic-desktop-full
 ### Gitpod base ###
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN yes | unminimize \
-    && apt-get install -y && \
-        zip \
-        unzip \
-        bash-completion \
-        build-essential \
-        ninja-build \
-        htop \
-        jq \
-        less \
-        locales \
-        man-db \
+RUN apt-get update && \
+    apt-get install -y \
         nano \
-        ripgrep \
-        software-properties-common \
-        sudo \
-        time \
-        emacs-nox \
-        vim \
-        multitail \
-        lsof \
-        ssl-cert \
-        fish \
-        zsh \
-    && locale-gen en_US.UTF-8
-
-ENV LANG=en_US.UTF-8
+        sudo && \
+    rm -rf /var/lib/apt/lists/*
 
 ### Git ###
 RUN add-apt-repository -y ppa:git-core/ppa \
@@ -53,7 +31,7 @@ RUN sudo echo "Running 'sudo' for Gitpod: success" && \
     mkdir -p /home/gitpod/.bashrc.d && \
     (echo; echo "for i in \$(ls -A \$HOME/.bashrc.d/); do source \$HOME/.bashrc.d/\$i; done"; echo) >> /home/gitpod/.bashrc
 
-### Install environment package ###
+### Install environment packages ###
 RUN sudo apt-get update && \
     sudo apt-get install -y \
     wget git \
