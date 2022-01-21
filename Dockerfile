@@ -39,15 +39,16 @@ WORKDIR /root/catkin
 ADD ./install/*.rosinstall /tmp/
 RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash" && \
     wstool init src /tmp/i3dr_stereo_camera_https.rosinstall
-# Replace i3dr_stereo_cam-ros with current repository
-RUN rm -rf ~/catkin/src/i3dr_stereo_camera-ros && \
-    mkdir -p ~/catkin/src/i3dr_stereo_camera-ros/
-ADD . /root/catkin/src/i3dr_stereo_camera-ros/
 # Install ROS catkin workspace dependencies
 RUN apt-get update && \
     rosdep install --from-paths ~/catkin/src --ignore-src -r -y && \
     rm -rf /var/lib/apt/lists/*
+# Replace i3dr_stereo_cam-ros with current repository
+RUN rm -rf ~/catkin/src/i3dr_stereo_camera-ros && \
+    mkdir -p ~/catkin/src/i3dr_stereo_camera-ros/
+ADD . /root/catkin/src/i3dr_stereo_camera-ros/
 
-# RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash" && \
-#     # /bin/bash -c "source /devel/setup.bash" && \
-#     catkin build
+RUN /bin/bash -c "source /opt/ros/$ROS_DISTRO/setup.bash" && \
+    cd ~/catkin && \
+    catkin config --extend /opt/ros/$ROS_DISTRO && \
+    catkin build
