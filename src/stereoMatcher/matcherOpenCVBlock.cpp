@@ -1,110 +1,42 @@
-#include "stereoMatcher/matcherOpenCVBlock.h"
+#ifndef MATCHEROPENCVBLOCK_H
+#define MATCHEROPENCVBLOCK_H
 
-void MatcherOpenCVBlock::init(void)
+#include "stereoMatcher/abstractStereoMatcher.h"
+#include <opencv2/ximgproc.hpp>
+
+class MatcherOpenCVBlock : public AbstractStereoMatcher
 {
-  setupDefaultMatcher();
-
-  // Setup for 16-bit disparity
-  cv::Mat(image_size, CV_16S).copyTo(disparity_lr);
-  cv::Mat(image_size, CV_16S).copyTo(disparity_rl);
-}
-
-void MatcherOpenCVBlock::setupDefaultMatcher(void)
-{
-  matcher = cv::StereoBM::create(64, 9);
-}
-
-int MatcherOpenCVBlock::forwardMatch()
-{
-  try
-  {
-  matcher->compute(*left, *right, disparity_lr);
-    if (interpolate)
+public:
+    explicit MatcherOpenCVBlock(std::string &param_file, cv::Size _image_size)
+        : AbstractStereoMatcher(param_file, _image_size)
     {
-      backwardMatch();
-      cv::Mat disparity_filter;
-      double wls_lambda = 8000;
-      double wls_sigma = 1.5;
-      auto wls_filter = cv::ximgproc::createDisparityWLSFilter(matcher);
-      wls_filter->setLambda(wls_lambda);
-      wls_filter->setSigmaColor(wls_sigma);
-      wls_filter->filter(disparity_lr, *left, disparity_filter, disparity_rl);
-      disparity_rl.copyTo(disparity_lr);
+        init();
     }
-    disparity_lr.convertTo(disparity_lr, CV_32FC1);
-    return 0;
-  }
-  catch ( cv::Exception& e )
-  {
-    const char* err_msg = e.what();
-    std::cerr << "Error in OpenCV StereoBM parameters" << std::endl;
-    std::cerr << err_msg << std::endl;
-    return -1;
-  }
-}
 
-int MatcherOpenCVBlock::backwardMatch()
-{
-  auto right_matcher = cv::ximgproc::createRightMatcher(matcher);
-  right_matcher->compute(*right, *left, disparity_rl);
-  return 0;
-}
+    int forwardMatch(void);
+    int backwardMatch(void);
 
-void MatcherOpenCVBlock::setMinDisparity(int min_disparity)
-{
-  matcher->setMinDisparity(min_disparity);
-  this->min_disparity = min_disparity;
-}
+    void setMinDisparity(int min_disparity);
+    void setDisparityRange(int disparity_range);
+    void setWindowSize(int window_size);
+    void setUniquenessRatio(int ratio);
+    void setTextureThreshold(int threshold);
+    void setSpeckleFilterWindow(int window);
+    void setSpeckleFilterRange(int range);
+    void setDisp12MaxDiff(int diff);
+    void setInterpolation(bool enable);
+    void setPreFilterCap(int cap);
+    void setPreFilterSize(int size);
 
-void MatcherOpenCVBlock::setDisparityRange(int disparity_range)
-{
-  disparity_range = disparity_range > 0 ? disparity_range : ((image_size.width / 8) + 15) & -16;
-  matcher->setNumDisparities(disparity_range);
-  this->disparity_range = disparity_range;
-}
+    //Not used in OpenCV Block
+    void setP1(float p1){};
+    void setP2(float p2){};
+    void setOcclusionDetection(bool enable){};
 
-void MatcherOpenCVBlock::setWindowSize(int window_size)
-{
-  this->window_size = window_size;
-  matcher->setBlockSize(window_size);
-}
+private:
+    cv::Ptr<cv::StereoBM> matcher;
+    void init(void);
+    void setupDefaultMatcher(void);
+};
 
-void MatcherOpenCVBlock::setTextureThreshold(int threshold)
-{
-  matcher->setTextureThreshold(threshold);
-}
-
-void MatcherOpenCVBlock::setUniquenessRatio(int ratio)
-{
-  matcher->setUniquenessRatio(ratio);
-}
-
-void MatcherOpenCVBlock::setSpeckleFilterWindow(int window)
-{
-  matcher->setSpeckleWindowSize(window);
-}
-
-void MatcherOpenCVBlock::setSpeckleFilterRange(int range)
-{
-  matcher->setSpeckleRange(range);
-}
-
-void MatcherOpenCVBlock::setDisp12MaxDiff(int diff)
-{
-  matcher->setDisp12MaxDiff(diff);
-}
-
-void MatcherOpenCVBlock::setInterpolation(bool enable)
-{
-  this->interpolate = enable;
-}
-
-void MatcherOpenCVBlock::setPreFilterCap(int cap)
-{
-  matcher->setPreFilterCap(cap);
-}
-
-void MatcherOpenCVBlock::setPreFilterSize(int size)
-{
-  matcher->setPreFilterSize(size);
-}
+#endif // MATCHEROPENCVBLOCK_H
