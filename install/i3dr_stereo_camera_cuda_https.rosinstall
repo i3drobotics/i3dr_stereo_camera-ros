@@ -1,15 +1,15 @@
 - git:
     local-name: i3dr_stereo_camera-ros
     uri: https://github.com/i3drobotics/i3dr_stereo_camera-ros.git
-    version: master
+    version: main
 - git:
     local-name: i3dr_rtabmap-ros
     uri: https://github.com/i3drobotics/i3dr_rtabmap-ros.git
-    version: master
+    version: main
 - git:
     local-name: i3dr_pcl_tools-ros
     uri: https://github.com/i3drobotics/i3dr_pcl_tools-ros.git
-    version: master
+    version: main
 - git:
     local-name: vision_opencv
     uri: https://github.com/ros-perception/vision_opencv.git

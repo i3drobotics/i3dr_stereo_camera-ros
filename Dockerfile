@@ -15,8 +15,8 @@ RUN mkdir ~/catkin/src
 
 WORKDIR ~/catkin
 
-RUN wstool init src https://raw.githubusercontent.com/i3drobotics/i3dr_titania-ros/master/install/i3dr_titania_https.rosinstall
-RUN sudo sh -c 'echo "yaml https://raw.githubusercontent.com/i3drobotics/pylon_camera/master/rosdep/pylon_sdk.yaml " > /etc/ros/rosdep/sources.list.d/15-plyon_camera.list'
+RUN wstool init src https://raw.githubusercontent.com/i3drobotics/i3dr_titania-ros/main/install/i3dr_titania_https.rosinstall
+RUN sudo sh -c 'echo "yaml https://raw.githubusercontent.com/i3drobotics/pylon_camera/main/rosdep/pylon_sdk.yaml " > /etc/ros/rosdep/sources.list.d/15-plyon_camera.list'
 RUN rosdep update -y
 
 RUN wget https://www.baslerweb.com/fp-1615275617/media/downloads/software/pylon_software/pylon_6.2.0.21487-deb0_amd64.deb
