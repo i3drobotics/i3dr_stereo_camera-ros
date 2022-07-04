@@ -2,6 +2,7 @@
 #define MATCHEROPENCVSGBM_H
 
 #include "stereoMatcher/abstractStereoMatcher.h"
+#include <opencv2/ximgproc.hpp>
 
 class MatcherOpenCVSGBM : public AbstractStereoMatcher
 {
