@@ -1,6 +1,3 @@
-#ifndef MATCHEROPENCVBLOCK_H
-#define MATCHEROPENCVBLOCK_H
-
 #include "stereoMatcher/abstractStereoMatcher.h"
 
 class MatcherOpenCVBlock : public AbstractStereoMatcher
@@ -37,5 +34,3 @@ private:
     void init(void);
     void setupDefaultMatcher(void);
 };
-
-#endif // MATCHEROPENCVBLOCK_H

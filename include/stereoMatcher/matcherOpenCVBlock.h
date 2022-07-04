@@ -1,9 +1,8 @@
 #ifndef MATCHEROPENCVBLOCK_H
 #define MATCHEROPENCVBLOCK_H
 
-//#define WITH_CUDA
-
 #include "stereoMatcher/abstractStereoMatcher.h"
+#include <opencv2/ximgproc.hpp>
 
 class MatcherOpenCVBlock : public AbstractStereoMatcher
 {
