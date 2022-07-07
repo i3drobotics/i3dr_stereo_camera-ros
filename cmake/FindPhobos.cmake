@@ -6,6 +6,7 @@ find_package(OpenCV 3)
 if (NOT OpenCV_FOUND)
     find_package(OpenCV 4 REQUIRED)
 endif()
+message(STATUS ${OpenCV_VERSION})
 
 find_path(PHOBOS_INCLUDE_DIR
     NAMES PhobosIntegration/PhobosIntegration.hpp
