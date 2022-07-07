@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 set (Phobos_ROOT_DIR "/usr/local/Phobos")
 
-# OpenCV 3.3.1 Required for I3DR stereo algorithms
-find_package(OpenCV 3)
+find_package(OpenCV 3 QUIET)
 if (NOT OpenCV_FOUND)
     find_package(OpenCV 4 REQUIRED)
 endif()
