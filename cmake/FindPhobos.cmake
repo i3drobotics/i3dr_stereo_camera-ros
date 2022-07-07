@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 set (Phobos_ROOT_DIR "/usr/local/Phobos")
 
-find_package(OpenCV 3 QUIET)
+find_package(OpenCV 3)
 if (NOT OpenCV_FOUND)
     find_package(OpenCV 4 REQUIRED)
 endif()
