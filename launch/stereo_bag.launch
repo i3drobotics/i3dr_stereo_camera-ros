@@ -19,7 +19,6 @@
     <!-- namespace for camera -->
     <arg name="camera_namespace" default="phobos_nuclear"/>
     <arg name="imu" default="false"/>
-    <arg name="map" default="false" />
     <arg name="glue" default="true" />
     <arg name="depth_max" default="10" />
     <arg name="gui" default="true" />
@@ -37,7 +36,7 @@
         <arg name="camera_mesh" value="$(arg camera_mesh)" />
         <arg name="urdf_namespace" value="$(arg urdf_namespace)"/>
         <arg name="imu" value="$(arg imu)"/>
-        <arg name="publish_imu_tf" value="$(eval arg('map') == 0)"/>
+        <arg name="publish_imu_tf" value="true"/>
         <arg name="gui" value="false"/>
     </include>
 
@@ -52,7 +51,6 @@
         <arg name="camera_mesh" value="$(arg camera_mesh)" />
         <arg name="urdf_namespace" value="$(arg urdf_namespace)"/>
         <arg name="imu" value="$(arg imu)"/>
-        <arg name="map" value="$(arg map)" />
         <arg name="glue" value="$(arg glue)" />
         <arg name="depth_max" value="$(arg depth_max)" />
         <arg name="gui" value="$(arg gui)"/>
